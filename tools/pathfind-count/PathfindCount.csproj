@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    計測専用の一時mod。ゲームの Managed フォルダーのDLLを参照してビルドする。
+    ビルド: dotnet build -c Release -p:GameManaged=<Cities2_Data\Managed のコピー先>
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>PathfindCount</AssemblyName>
+    <LangVersion>9.0</LangVersion>
+    <NoStdLib>true</NoStdLib>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="$(GameManaged)\mscorlib.dll" Private="false" />
+    <Reference Include="$(GameManaged)\netstandard.dll" Private="false" />
+    <Reference Include="$(GameManaged)\System.dll" Private="false" />
+    <Reference Include="$(GameManaged)\System.Core.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Game.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Unity.Entities.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Unity.Collections.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Unity.Mathematics.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Unity.Burst.dll" Private="false" />
+    <Reference Include="$(GameManaged)\UnityEngine.CoreModule.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Colossal.Core.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Colossal.Mathematics.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Colossal.Collections.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Colossal.Logging.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Colossal.IO.AssetDatabase.dll" Private="false" />
+  </ItemGroup>
+</Project>

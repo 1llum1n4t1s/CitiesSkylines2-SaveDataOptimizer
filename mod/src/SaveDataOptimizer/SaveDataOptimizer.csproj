@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    ゲームに読み込ませる mod 本体。ゲームの Cities2_Data\Managed にある DLL を参照してビルドする。
+    ビルド: dotnet build -c Release -p:GameManaged=<Managed フォルダー（またはそのコピー）>
+    出力の SaveDataOptimizer.dll と UI の SaveDataOptimizer.mjs を
+    %LocalLow%\Colossal Order\Cities Skylines II\Mods\SaveDataOptimizer\ に置くと読み込まれる。
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>SaveDataOptimizer</AssemblyName>
+    <RootNamespace>SaveDataOptimizer</RootNamespace>
+    <!-- ゲームの mscorlib / netstandard をそのまま参照する（Unity Mono と同じ型を使うため）。 -->
+    <NoStdLib>true</NoStdLib>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <GameManaged Condition="'$(GameManaged)' == ''">$(MSBuildThisFileDirectory)..\..\..\target\size-investigation\ref</GameManaged>
+    <UiDist>$(MSBuildThisFileDirectory)..\..\ui\dist</UiDist>
+  </PropertyGroup>
+
+  <!-- Core はソースごと取り込む（配布する DLL を 1 つにするため）。 -->
+  <ItemGroup>
+    <Compile Include="..\SaveDataOptimizer.Core\**\*.cs" Exclude="..\SaveDataOptimizer.Core\obj\**;..\SaveDataOptimizer.Core\bin\**" LinkBase="Core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="$(GameManaged)\mscorlib.dll" Private="false" />
+    <Reference Include="$(GameManaged)\netstandard.dll" Private="false" />
+    <Reference Include="$(GameManaged)\System.dll" Private="false" />
+    <Reference Include="$(GameManaged)\System.Core.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Game.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Unity.Entities.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Unity.Collections.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Unity.Mathematics.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Unity.Burst.dll" Private="false" />
+    <Reference Include="$(GameManaged)\UnityEngine.CoreModule.dll" Private="false" />
+    <!-- 動作確認用の画面保存（debug-report の目印があるときだけ使う）。 -->
+    <Reference Include="$(GameManaged)\UnityEngine.ScreenCaptureModule.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Colossal.Core.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Colossal.Mathematics.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Colossal.Collections.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Colossal.Logging.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Colossal.IO.AssetDatabase.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Colossal.UI.Binding.dll" Private="false" />
+  </ItemGroup>
+
+  <!-- UI（Bun でビルドした .mjs）があれば DLL と同じ出力先へ置く。 -->
+  <Target Name="CopyUiModule" AfterTargets="Build" Condition="Exists('$(UiDist)\SaveDataOptimizer.mjs')">
+    <Copy SourceFiles="$(UiDist)\SaveDataOptimizer.mjs" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

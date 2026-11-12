@@ -1,0 +1,9 @@
+[package]
+name = "cok-inspector"
+version = "0.1.0"
+edition = "2024"
+default-run = "cok-inspector"
+
+[dependencies]
+zip = { version = "2.4", default-features = false, features = ["deflate"] }
+zstd = { version = "0.13", default-features = false }

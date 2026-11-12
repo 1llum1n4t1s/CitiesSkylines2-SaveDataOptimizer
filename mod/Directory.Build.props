@@ -1,0 +1,20 @@
+<Project>
+  <!--
+    mod 一式の共通設定。ほかの C# プロジェクト（Shisui・Kiriha など）と品質ゲートを揃える。
+    ただしゲーム本体は Unity Mono で動くため、mod と Core は net11.0 ではなく netstandard2.1 を対象にし、
+    PublishAot も使わない。テストだけは net11.0 で動かす。
+  -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <!-- リリースバージョン。更新は /vava スキル経由のみ (手動で上げない)。 -->
+    <Version>0.1.0</Version>
+    <Authors>Kagayoi</Authors>
+    <Company>Kagayoi</Company>
+    <Copyright>Copyright © 2026 Kagayoi</Copyright>
+    <!-- 警告をエラー扱いにして品質ゲートを他リポジトリと揃える。 -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- IDE コードスタイル分析をビルド時にも強制する。IDE0005 はドキュメント生成が必須なため対象外。 -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+</Project>

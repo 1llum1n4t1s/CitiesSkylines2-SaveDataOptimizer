@@ -1,0 +1,8 @@
+/target/
+
+# mod（C# / Bun）のビルド生成物
+bin/
+obj/
+/mod/ui/node_modules/
+/mod/ui/dist/
+TestResults/

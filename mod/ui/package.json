@@ -1,0 +1,12 @@
+{
+  "name": "save-data-optimizer-ui",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build src/index.tsx --outfile dist/SaveDataOptimizer.mjs --format esm --target browser --minify-syntax",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}

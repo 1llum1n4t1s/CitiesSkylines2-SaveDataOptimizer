@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    ゲームに依存しない純粋な処理（集計・判定・表示用データの組み立て）。
+    単体テストのために独立したプロジェクトにしているが、配布物では mod 本体へソースごと取り込む
+    （ゲームの mod 読み込みで依存 DLL の解決に頼らないため）。ここにゲームの型を持ち込まない。
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <RootNamespace>SaveDataOptimizer.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="SaveDataOptimizer.Core.Tests" />
+  </ItemGroup>
+</Project>
