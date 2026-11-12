@@ -8,7 +8,7 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <!-- リリースバージョン。更新は /vava スキル経由のみ (手動で上げない)。 -->
-    <Version>0.1.0</Version>
+    <Version>1.0.0</Version>
     <Authors>Kagayoi</Authors>
     <Company>Kagayoi</Company>
     <Copyright>Copyright © 2026 Kagayoi</Copyright>

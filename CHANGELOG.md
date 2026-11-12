@@ -3,6 +3,11 @@
 City Checkup（Cities: Skylines II 用 mod）の変更履歴です。各版の節は Paradox Mods の変更履歴（ChangeLog）にもそのまま使われるため、
 英語と日本語の両方で書きます（`mod/scripts/Release-ParadoxMods.ps1` が `## [版]` の節を取り出して送ります）。
 
+## [1.0.0] - 2026-11-12
+
+- First stable version. No functional changes from 0.1.0.
+- 正式版。0.1.0 からの機能の変更はありません。
+
 ## [0.1.0] - 2026-11-12
 
 - First release on Paradox Mods (ID 167225).

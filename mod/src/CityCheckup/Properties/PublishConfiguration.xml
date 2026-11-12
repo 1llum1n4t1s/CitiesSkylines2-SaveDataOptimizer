@@ -48,7 +48,7 @@ The panel follows your game language: Japanese when the game is set to Japanese,
 	<Screenshot Value="Properties/Screenshot-MissingAssets.jpg" />
 	<Tag Value="Code Mod" />
 	<ForumLink Value="" />
-	<ModVersion Value="0.1.0" />
+	<ModVersion Value="1.0.0" />
 	<!-- 2026-11-12 時点で動作確認したゲームのバージョン（1.6.4f1）。 -->
 	<GameVersion Value="1.6.*" />
 	<Dependency Id="" />
