@@ -1,0 +1,44 @@
+version: 2
+updates:
+  # Rust ツール（cok-inspector）。根拠: /Cargo.toml, /Cargo.lock
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    groups:
+      cargo-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # mod の Core テスト（MSTest）。根拠: /mod/tests/CityCheckup.Core.Tests/CityCheckup.Core.Tests.csproj
+  # mod 本体と Core はゲームの DLL を直接参照し、NuGet パッケージを持たない。
+  - package-ecosystem: "nuget"
+    directory: "/mod/tests/CityCheckup.Core.Tests"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    groups:
+      nuget-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # ゲーム内パネルの UI（Bun）。根拠: /mod/ui/package.json, /mod/ui/bun.lock（テキスト形式）
+  - package-ecosystem: "bun"
+    directory: "/mod/ui"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    groups:
+      bun-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
