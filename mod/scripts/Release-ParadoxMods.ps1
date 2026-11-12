@@ -16,7 +16,8 @@
     5. 送付: 専用の作業フォルダーへ配布物・公開設定・画像を送り、ハッシュが一致することを確かめる。
        公開設定の ChangeLog は CHANGELOG.md の該当節から作る（二重管理しないため）。
     6. 公開: ModPublisher を実行し、「finished successfully」と ModId を確認する（-DryRun では実行しない）。
-    7. 常設の更新: ゲーム PC の Mods\CityCheckup を同じ配布物へ置き換える（-SkipLocalInstall で省略）。
+    7. 直接置きの更新（-UpdateLocalInstall のときだけ）: ゲーム PC の Mods\CityCheckup を同じ配布物へ置き換える。
+       公開用のゲーム PC は Paradox Mods の購読で使っており、直接置きと購読が両方あると二重に読み込まれるため、既定では行わない。
 
   環境固有の値（SSH の接続先・ゲームのパス・参照 DLL の場所）は、Git 管理外の mod/scripts/release.local.json に置く。
   書式は mod/scripts/release.local.example.json を参照。
@@ -25,16 +26,16 @@
   ModPublisher の命令。初回は Publish、版の更新は NewVersion、説明文や画像だけの更新は Update。
 
 .PARAMETER DryRun
-  ビルド・検証・送付まで行い、アップロードと常設の更新はしない。
+  ビルド・検証・送付まで行い、アップロードと直接置きの更新はしない。
 
-.PARAMETER SkipLocalInstall
-  公開後に、ゲーム PC の Mods\CityCheckup を置き換えない。
+.PARAMETER UpdateLocalInstall
+  公開後に、ゲーム PC の Mods\CityCheckup（直接置き）も同じ配布物へ置き換える。購読で使っている PC では指定しない。
 #>
 param(
     [ValidateSet('Publish', 'NewVersion', 'Update')]
     [string]$Command = 'NewVersion',
     [switch]$DryRun,
-    [switch]$SkipLocalInstall
+    [switch]$UpdateLocalInstall
 )
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
@@ -148,7 +149,7 @@ foreach ($pair in $hashes.GetEnumerator()) {
 'ハッシュ一致'
 
 if ($DryRun) {
-    Step '-DryRun のためアップロードと常設の更新はしません'
+    Step '-DryRun のためアップロードと直接置きの更新はしません'
     "ゲーム PC の作業フォルダー: $stage"
     return
 }
@@ -166,8 +167,8 @@ if (-not ($result -match 'finished successfully')) { throw 'ModPublisher が成�
 $published = ($result | Select-String -Pattern 'Id=(\d+)' | Select-Object -First 1)
 if ($published) { "ModId: $($published.Matches[0].Groups[1].Value)" }
 
-if (-not $SkipLocalInstall) {
-    Step '常設の mod を更新'
+if ($UpdateLocalInstall) {
+    Step '直接置きの mod を更新'
     $mods = "$($local.userDataDir)\Mods\CityCheckup"
     $install = Remote @"
 `$ErrorActionPreference = 'Stop'
@@ -178,8 +179,8 @@ Copy-Item -LiteralPath $(Quote "$stage\content\CityCheckup.dll"), $(Quote "$stag
 Get-ChildItem -LiteralPath $(Quote $mods) -File | ForEach-Object { '{0} {1}' -f `$_.Name, (Get-FileHash -LiteralPath `$_.FullName -Algorithm SHA256).Hash }
 "@
     foreach ($pair in $hashes.GetEnumerator()) {
-        if ($install -notcontains ('{0} {1}' -f $pair.Key, $pair.Value)) { throw "常設の更新を確認できません: $($install -join ' ')" }
+        if ($install -notcontains ('{0} {1}' -f $pair.Key, $pair.Value)) { throw "直接置きの更新を確認できません: $($install -join ' ')" }
     }
-    '常設の mod を更新しました'
+    '直接置きの mod を更新しました'
 }
 "完了: City Checkup $version（ゲーム PC の作業フォルダー $stage は残しています）"

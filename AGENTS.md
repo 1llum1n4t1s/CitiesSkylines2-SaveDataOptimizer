@@ -51,6 +51,7 @@ dotnet build mod/src/CityCheckup/CityCheckup.csproj -c Release -p:GameManaged=<C
 
 - ゲーム内の確認は、`Mods\CityCheckup\` に置く目印ファイル（`debug-report`、`debug-missing`、`debug-delete`、`debug-speed3`、英語表示に固定する `debug-lang-en`。`mod/src/CityCheckup/DebugMarkers.cs`）で UI 操作を代替し、`Player.log` と画面保存で結果を見る。通常の利用者環境には置かない。
 - 実セーブでの削除確認は、自動保存で上書きされる前にゲームを止め、保存一覧の前後を比較する。
+- 確認用に `Mods\CityCheckup\` へ開発版を直接置くと、購読している公開版と二重に読み込まれる。確認の間は購読を無効にし、終わったら直接置きを片付けて購読へ戻す。
 
 ## リリース（/vava）
 
@@ -61,14 +62,15 @@ Rust ツール（`Cargo.toml` の `cok-inspector`）は配布しておらず、�
 - **同期対象**: `mod/src/CityCheckup/Properties/PublishConfiguration.xml` の `<ModVersion Value>`。ほかに版を持つ file は無い（`mod/ui/package.json` は版を持たない）。
 - **変更履歴**: リポジトリ直下の `CHANGELOG.md` に `## [版] - 日付` の節を足す。英語と日本語の両方で書く（その節が Paradox Mods の ChangeLog として送られる）。
 - **公開**: PowerShell 7 で `& ./mod/scripts/Release-ParadoxMods.ps1 -Command NewVersion` をリポジトリ直下で実行する（`pwsh -File` の入れ子起動は削除検査フックが拒否するため、今のセッションで直接呼ぶ）。
-  - 版の照合 → UI と mod 本体の Release ビルド → DLL の版と SHA-256 の検証 → 公開用のゲーム PC へ送付してハッシュ照合 → ゲーム付属の ModPublisher で公開 → 公開用のゲーム PC の `Mods\CityCheckup` を同じ配布物へ更新、の順に 1 本で行う。
+  - 版の照合 → UI と mod 本体の Release ビルド → DLL の版と SHA-256 の検証 → 公開用のゲーム PC へ送付してハッシュ照合 → ゲーム付属の ModPublisher で公開、の順に 1 本で行う。
+  - 公開用のゲーム PC は Paradox Mods の購読で City Checkup を使う（2026-11-12 に直接置きの `Mods\CityCheckup` を撤去）。直接置きと購読が両方あると二重に読み込まれるため、リリースで直接置きは更新しない。`-UpdateLocalInstall` は購読していない PC でだけ使う。
   - 公開前の確認だけをしたいときは `-DryRun`（ビルド・検証・送付まで）。
-  - 成功の判定は ModPublisher の出力の `Mod publishing process finished successfully`（受付応答）。公開後のページの再取得や反映待ちはしない。
+  - 成功の判定は ModPublisher の出力の `... process finished successfully`（初回は `Mod publishing process`、版の更新は `Publishing new version updating process`。受付応答）。公開後のページの再取得や反映待ちはしない。
   - 説明文・画像だけを更新するときは `-Command Update`。初回公開（`Publish`）は済んでいる。
 - **環境固有の値**: SSH の接続先・ゲームのパス・参照 DLL の場所は Git 管理外の `mod/scripts/release.local.json` に置く（書式は `release.local.example.json`）。無ければスクリプトが止まる。
 - **公開用のゲーム PC は本人が普段遊ぶ PC**。スクリプトはゲームが起動中なら何もせずに中止する。起動中で止まったら、ゲームを終了してよいか本人に確認してから再実行する。ゲームを勝手に終了しない。
 - ModPublisher はゲームでログインした Paradox アカウントで自動ログインする。パスワードは扱わない。ゲーム PC に .NET 6 が無くても `DOTNET_ROLL_FORWARD=Major` で動く（スクリプトが設定する）。
 - **deploy**: なし（`DEPLOY_REQUIREMENT=not-applicable`）。Paradox Mods への公開そのものが配布。
 - **署名・CI**: なし。ローカルのスクリプトだけで公開する。依存の更新は `.github/dependabot.yml`（cargo・nuget はテストのみ・bun、週次で minor/patch をまとめる）が PR にする。
-- **告知**: 初回公開は非公開（Hidden、`PublishConfiguration.xml` の注記と README を参照）。Paradox Mods 上で一般公開になっている版だけが、公開後の X 告知の対象になる。公開範囲は本人に確認する。
+- **告知**: Paradox Mods 上で一般公開になっている版が、公開後の X 告知の対象になる。1.0.0 はログインなしでページを開ける状態で、本人の了承のもと公開範囲を変えずに X で告知した（@KagayoiJP）。公開範囲が変わった場合は本人に確認する。
 - **既知の経緯**: 0.1.0 は 2026-11-12 に release branch を作らずに公開した（公開時のコミットは `2692b58`）。1.0.0 以降は `release/<版>` branch を作る（`release/1.0.0` がある）。
