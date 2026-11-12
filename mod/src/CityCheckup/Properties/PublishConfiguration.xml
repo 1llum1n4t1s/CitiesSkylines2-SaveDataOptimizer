@@ -6,7 +6,8 @@
 		複数行の欄は行頭に空白を入れないこと（ModPublisher が字下げも本文として扱うため）。
 		画像のパスは、公開ツールを動かす作業フォルダー（Properties の親）からの相対パス。
 	-->
-	<ModId Value="" />
+	<!-- 2026-11-12 に初回公開（Hidden）。https://mods.paradoxplaza.com/mods/167225/Windows -->
+	<ModId Value="167225" />
 	<DisplayName Value="City Checkup" />
 	<ShortDescription Value="Find out why your city runs slowly, and clean up objects left behind by removed mods." />
 	<LongDescription>
