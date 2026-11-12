@@ -6,6 +6,17 @@ use zip::ZipArchive;
 
 pub const PREVIEW_LIMIT: u64 = 64 * 1024;
 
+/// ZIP の中で、名前が `suffix` で終わる最初の項目の名前を返す。
+///
+/// zip 9 からは `file_names()` が名前ごとに `Result` を返す（名前の符号化が不正な項目があり得るため）。
+/// 読めない名前の項目は探している項目ではないので飛ばし、従来どおり最初に一致した名前を使う。
+pub fn find_entry_name<R: Read + io::Seek>(zip: &ZipArchive<R>, suffix: &str) -> Option<String> {
+    zip.file_names()
+        .filter_map(Result::ok)
+        .find(|name| name.ends_with(suffix))
+        .map(|name| name.into_owned())
+}
+
 #[derive(Debug)]
 pub struct Entry {
     pub name: String,
@@ -35,7 +46,11 @@ impl Save {
                 .by_index_raw(index)
                 .map_err(|e| format!("項目 {index} を読めません: {e}"))?;
             entries.push(Entry {
-                name: entry.name().to_owned(),
+                // zip 9 からは名前の取り出しが失敗し得る（不正な符号化など）。読めない名前は項目ごと開けないものとして扱う。
+                name: entry
+                    .name()
+                    .map_err(|e| format!("項目 {index} の名前を読めません: {e}"))?
+                    .into_owned(),
                 size: entry.size(),
                 compressed: entry.compressed_size(),
                 method: format!("{:?}", entry.compression()),

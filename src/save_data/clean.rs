@@ -623,11 +623,7 @@ fn rewrite_save_data(
 pub fn preview_cleanup(input: &Path) -> Result<CleanupPlan, String> {
     let mut zip = ZipArchive::new(File::open(input).map_err(|e| e.to_string())?)
         .map_err(|e| e.to_string())?;
-    let name = zip
-        .file_names()
-        .find(|name| name.ends_with(".SaveGameData"))
-        .ok_or("SaveGameData がありません")?
-        .to_owned();
+    let name = crate::archive::find_entry_name(&zip, ".SaveGameData").ok_or("SaveGameData がありません")?;
     let mut reader = BufReader::new(Cursor::new(extract(&mut zip, &name)?));
     let header = find_first_frame(&mut reader)?;
     let types = parse_types(&read_frame(&mut reader, header, MAX_TABLE)?)?;
@@ -682,11 +678,7 @@ pub(super) fn write_save_copy(
     }
     let file = File::open(input).map_err(|e| e.to_string())?;
     let mut zip = ZipArchive::new(file).map_err(|e| e.to_string())?;
-    let save = zip
-        .file_names()
-        .find(|name| name.ends_with(".SaveGameData"))
-        .ok_or("SaveGameData がありません")?
-        .to_owned();
+    let save = crate::archive::find_entry_name(&zip, ".SaveGameData").ok_or("SaveGameData がありません")?;
     let stem = save.strip_suffix(".SaveGameData").unwrap();
     let data_id = String::from_utf8(extract(&mut zip, &format!("{stem}.SaveGameData.cid"))?)
         .map_err(|e| e.to_string())?;

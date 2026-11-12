@@ -16,11 +16,7 @@ fn capture_covers_every_known_beartris_vehicle_reference() {
         return;
     };
     let mut zip = ZipArchive::new(File::open(path).unwrap()).unwrap();
-    let name = zip
-        .file_names()
-        .find(|name| name.ends_with(".SaveGameData"))
-        .unwrap()
-        .to_owned();
+    let name = crate::archive::find_entry_name(&zip, ".SaveGameData").unwrap();
     let mut reader = BufReader::new(zip.by_name(&name).unwrap());
     let header = find_first_frame(&mut reader).unwrap();
     let types = parse_types(&read_frame(&mut reader, header, MAX_TABLE).unwrap()).unwrap();
@@ -93,11 +89,7 @@ fn verified_layouts_remap_real_beartris_references() {
         return;
     };
     let mut zip = ZipArchive::new(File::open(path).unwrap()).unwrap();
-    let index = zip
-        .file_names()
-        .find(|name| name.ends_with(".SaveGameData"))
-        .unwrap()
-        .to_owned();
+    let index = crate::archive::find_entry_name(&zip, ".SaveGameData").unwrap();
     let mut data = Vec::new();
     zip.by_name(&index).unwrap().read_to_end(&mut data).unwrap();
     let mut reader = BufReader::new(Cursor::new(&data));

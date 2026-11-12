@@ -250,11 +250,7 @@ fn visit(
 pub(super) fn read_save_data(input: &Path) -> Result<Vec<u8>, String> {
     let file = File::open(input).map_err(|e| e.to_string())?;
     let mut zip = ZipArchive::new(file).map_err(|e| e.to_string())?;
-    let name = zip
-        .file_names()
-        .find(|name| name.ends_with(".SaveGameData"))
-        .ok_or("SaveGameData がありません")?
-        .to_owned();
+    let name = crate::archive::find_entry_name(&zip, ".SaveGameData").ok_or("SaveGameData がありません")?;
     let mut data = Vec::new();
     zip.by_name(&name)
         .map_err(|e| e.to_string())?

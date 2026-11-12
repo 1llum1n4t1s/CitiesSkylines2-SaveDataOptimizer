@@ -1166,7 +1166,9 @@ pub fn save_sizes(input: &Path) -> Result<String, String> {
     writeln!(out, "== ZIP内の部品").unwrap();
     for i in 0..zip.len() {
         let f = zip.by_index(i).map_err(|e| e.to_string())?;
-        writeln!(out, "{:>12} {}", f.size(), f.name()).unwrap();
+        // zip 9 からは名前の取り出しが失敗し得る。
+        let name = f.name().map_err(|e| e.to_string())?;
+        writeln!(out, "{:>12} {}", f.size(), name).unwrap();
     }
     drop(zip);
     let data = read_save_data(input)?;
