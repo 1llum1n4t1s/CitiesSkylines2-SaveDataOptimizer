@@ -1,7 +1,7 @@
 using Game.Rendering;
 using Vector3 = UnityEngine.Vector3;
 
-namespace SaveDataOptimizer.Ui;
+namespace CityCheckup.Ui;
 
 /// <summary>一覧から選ばれた位置へカメラを移す（各パネルで共通）。</summary>
 internal static class CameraJump

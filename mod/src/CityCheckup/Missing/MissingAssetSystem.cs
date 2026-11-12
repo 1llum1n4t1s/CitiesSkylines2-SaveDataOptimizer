@@ -13,15 +13,15 @@ using Game.Rendering;
 using Game.Tools;
 using Game.UI;
 using Game.UI.InGame;
-using SaveDataOptimizer.Core;
-using SaveDataOptimizer.Ui;
+using CityCheckup.Core;
+using CityCheckup.Ui;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Debug = UnityEngine.Debug;
 using Transform = Game.Objects.Transform;
 
-namespace SaveDataOptimizer.Missing;
+namespace CityCheckup.Missing;
 
 /// <summary>
 /// アンインストールした mod のアセット（欠落したプレハブ）を参照している物を探し、選ばれたものを消す。

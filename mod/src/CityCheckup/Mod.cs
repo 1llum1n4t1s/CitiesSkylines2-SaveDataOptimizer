@@ -1,13 +1,12 @@
 using Game;
 using Game.Modding;
 using Game.Simulation;
-using SaveDataOptimizer.Analysis;
-using SaveDataOptimizer.Missing;
-using SaveDataOptimizer.Ui;
-using SaveDataOptimizer.Vehicles;
+using CityCheckup.Analysis;
+using CityCheckup.Missing;
+using CityCheckup.Ui;
 using UnityEngine;
 
-namespace SaveDataOptimizer;
+namespace CityCheckup;
 
 /// <summary>
 /// mod の入口。ゲームが Mods フォルダーの DLL を読み込むと OnLoad が呼ばれ、ここで自前のシステムを登録する。
@@ -19,7 +18,7 @@ namespace SaveDataOptimizer;
 public sealed class Mod : IMod
 {
     /// <summary>Player.log でこの mod の行を見分けるための接頭辞。</summary>
-    public const string LogPrefix = "[SaveDataOptimizer]";
+    public const string LogPrefix = "[CityCheckup]";
 
     public void OnLoad(UpdateSystem updateSystem)
     {
@@ -27,8 +26,6 @@ public sealed class Mod : IMod
         updateSystem.UpdateAt<PanelUISystem>(SystemUpdatePhase.UIUpdate);
         // 欠落アセットの検出と削除。探す・消すはプレイヤーが UI で選んだときだけ動く。
         updateSystem.UpdateAt<MissingAssetSystem>(SystemUpdatePhase.UIUpdate);
-        // 撤去後に取り残された車両の検出と削除。探す・消すはプレイヤーが UI で選んだときだけ動く。
-        updateSystem.UpdateAt<StrandedVehicleSystem>(SystemUpdatePhase.UIUpdate);
         // 経路探しの依頼数は、PathfindSetupSystem の直前・直後で読む（パネルを開いている間だけ数える）。
         updateSystem.UpdateBefore<PathfindDemandBeforeSystem, PathfindSetupSystem>(SystemUpdatePhase.MainLoop);
         updateSystem.UpdateAfter<PathfindDemandSystem, PathfindSetupSystem>(SystemUpdatePhase.MainLoop);

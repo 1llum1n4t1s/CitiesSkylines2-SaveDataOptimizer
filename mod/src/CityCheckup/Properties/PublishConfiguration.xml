@@ -1,0 +1,55 @@
+<Publish>
+	<!--
+		Paradox Mods へ掲載するときの情報（ゲーム付属の ModPublisher が読む）。書式はゲーム同梱のテンプレート
+		（Cities2_Data\Content\Game\.ModdingToolchain\ColossalOrder.ModTemplate.1.0.0.nupkg）に合わせている。
+		初回公開（Publish）の後に表示される ModId を下の ModId に書き戻すこと。2 回目以降の更新（NewVersion）に必要。
+		複数行の欄は行頭に空白を入れないこと（ModPublisher が字下げも本文として扱うため）。
+	-->
+	<ModId Value="" />
+	<DisplayName Value="City Checkup" />
+	<ShortDescription Value="Find out why your city is slow, and clean up objects left behind by removed mods." />
+	<LongDescription>
+# City Checkup
+
+A health check for your city. Open it from the button at the top left of the screen.
+
+**Note:** the in-game interface is currently in Japanese only.
+
+## Load analysis
+* Shows which systems request the most pathfinding (job search, shopping, service dispatch, ...).
+* Compares the simulation speed you set with the speed the game actually reaches.
+* Counts job seekers and free jobs per education level, and lists districts with many unemployed citizens but no jobs nearby. A jump button moves the camera there.
+* Counting runs only while this tab is open.
+
+## Missing assets
+* Lists objects that were placed with mods you have since uninstalled, grouped by asset name.
+* Jump to each one, select the groups you want, and delete them.
+* Roads, tracks and areas are listed but cannot be deleted here.
+
+**Deleting cannot be undone.** If you change your mind, load the city again without saving.
+
+---
+
+# City Checkup（街の診断）
+
+画面左上の **街の診断** ボタンから開きます。
+
+* **負荷分析**：経路探しを多く頼んでいる処理、実際のシミュレーション速度、学歴別の求職者と空き職場、職が足りない地区を表示します。
+* **欠落アセット**：アンインストールした mod の物を探し、選んで削除できます。
+削除は元に戻せません。やり直すときは、保存せずに街を読み込み直してください。
+	</LongDescription>
+	<Thumbnail Value="Properties/Thumbnail.png" />
+	<!-- 画面写真は未定（掲載前に用意する）。 -->
+	<Screenshot Value="" />
+	<Tag Value="Code Mod" />
+	<ForumLink Value="" />
+	<ModVersion Value="0.1.0" />
+	<!-- 2026-11-12 時点で動作確認したゲームのバージョン（1.6.4f1）。 -->
+	<GameVersion Value="1.6.*" />
+	<Dependency Id="" />
+	<RequiredDLC Value="" />
+	<ChangeLog>
+First release.
+	</ChangeLog>
+	<ExternalLink Type="" Url="" />
+</Publish>

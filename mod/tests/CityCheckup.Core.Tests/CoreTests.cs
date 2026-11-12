@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace SaveDataOptimizer.Core.Tests;
+namespace CityCheckup.Core.Tests;
 
 [TestClass]
 public sealed class PathfindSourcesTests

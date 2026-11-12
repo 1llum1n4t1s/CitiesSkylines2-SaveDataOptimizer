@@ -1,4 +1,4 @@
-// mod の UI の入口。ゲームが SaveDataOptimizer.mjs を読み込み、default export を呼んで部品を登録させる。
+// mod の UI の入口。ゲームが CityCheckup.mjs を読み込み、default export を呼んで部品を登録させる。
 import type { ModuleRegistry } from "./game";
 import { Root } from "./root";
 

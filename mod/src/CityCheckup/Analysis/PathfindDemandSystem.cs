@@ -5,11 +5,11 @@ using Game.Citizens;
 using Game.Common;
 using Game.Pathfind;
 using Game.Simulation;
-using SaveDataOptimizer.Core;
+using CityCheckup.Core;
 using Unity.Entities;
 using UnityEngine;
 
-namespace SaveDataOptimizer.Analysis;
+namespace CityCheckup.Analysis;
 
 /// <summary>
 /// 経路探しの依頼を、依頼したシステムごとに数える（ゲームの処理は変えない、読み取り専用）。

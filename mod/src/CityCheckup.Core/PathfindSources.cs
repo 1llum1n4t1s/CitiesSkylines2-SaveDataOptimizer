@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace SaveDataOptimizer.Core;
+namespace CityCheckup.Core;
 
 /// <summary>経路探しの依頼元の分類。表示の並び順もこの順にする。</summary>
 public enum PathfindSource

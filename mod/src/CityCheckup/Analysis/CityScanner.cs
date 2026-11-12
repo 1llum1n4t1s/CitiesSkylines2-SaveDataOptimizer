@@ -4,12 +4,12 @@ using Game.Citizens;
 using Game.Common;
 using Game.Companies;
 using Game.Tools;
-using SaveDataOptimizer.Core;
+using CityCheckup.Core;
 using Unity.Collections;
 using Unity.Entities;
 using Transform = Game.Objects.Transform;
 
-namespace SaveDataOptimizer.Analysis;
+namespace CityCheckup.Analysis;
 
 /// <summary>
 /// 市民・世帯・職場を数えて <see cref="JobMarket"/> と世帯の集計を作る（読み取り専用）。

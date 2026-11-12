@@ -5,11 +5,11 @@ using Game;
 using Game.Rendering;
 using Game.Simulation;
 using Game.UI;
-using SaveDataOptimizer.Analysis;
-using SaveDataOptimizer.Core;
+using CityCheckup.Analysis;
+using CityCheckup.Core;
 using Debug = UnityEngine.Debug;
 
-namespace SaveDataOptimizer.Ui;
+namespace CityCheckup.Ui;
 
 /// <summary>
 /// 負荷分析パネルと C# をつなぐバインディングを持ち、パネルを開いている間だけ集計を動かす。
@@ -21,7 +21,7 @@ namespace SaveDataOptimizer.Ui;
 /// </remarks>
 public sealed partial class PanelUISystem : UISystemBase
 {
-    public const string Group = "saveDataOptimizer";
+    public const string Group = "cityCheckup";
 
     // 表示の更新間隔（実時間の秒）。速度の表示だけはこの間隔で更新する。
     private const float RefreshSeconds = 1f;
@@ -62,16 +62,15 @@ public sealed partial class PanelUISystem : UISystemBase
         // UI が表示されたことを Player.log で確かめるための合図。画面を見られない環境での動作確認に使う。
         AddBinding(new TriggerBinding<string>(Group, "uiMounted", OnUiMounted));
 
-        // 動作確認用: Mods\SaveDataOptimizer\debug-report があれば、パネルを開いた状態で始めて集計を動かし、
+        // 動作確認用: Mods\CityCheckup\debug-report があれば、パネルを開いた状態で始めて集計を動かし、
         // 集計のたびに結果の JSON を Player.log へ書き、少し経ったら画面を debug-shot.png に保存する
         // （画面を見たり操作したりできない検証機で、中身と見た目を確かめるため）。
         m_DebugReport = DebugMarkers.Has("debug-report");
         m_DebugShotPath = DebugMarkers.PathOf("debug-shot.png");
         var debugMissing = DebugMarkers.Has("debug-missing") || DebugMarkers.Has("debug-delete");
-        var debugVehicles = DebugMarkers.Has("debug-vehicles");
-        AddBinding(new ValueBinding<bool>(Group, "debugOpen", m_DebugReport || debugMissing || debugVehicles));
+        AddBinding(new ValueBinding<bool>(Group, "debugOpen", m_DebugReport || debugMissing));
         // 動作確認で最初に開くタブ。
-        AddBinding(new ValueBinding<string>(Group, "debugTab", debugVehicles ? "vehicles" : debugMissing ? "missing" : "load"));
+        AddBinding(new ValueBinding<string>(Group, "debugTab", debugMissing ? "missing" : "load"));
         if (m_DebugReport)
         {
             OnSetOpen(true);

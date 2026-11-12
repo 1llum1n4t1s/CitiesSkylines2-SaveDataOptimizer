@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CityCheckup.Core/CityCheckup.Core.csproj" />
+    <Project Path="src/CityCheckup/CityCheckup.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CityCheckup.Core.Tests/CityCheckup.Core.Tests.csproj" />
+  </Folder>
+</Solution>

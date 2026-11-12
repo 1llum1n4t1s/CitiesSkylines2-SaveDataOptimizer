@@ -1,9 +1,9 @@
 using System.IO;
 
-namespace SaveDataOptimizer;
+namespace CityCheckup;
 
 /// <summary>
-/// 動作確認用の目印ファイル。Mods\SaveDataOptimizer\ に置いたときだけ有効になる。
+/// 動作確認用の目印ファイル。Mods\CityCheckup\ に置いたときだけ有効になる。
 /// </summary>
 /// <remarks>
 /// 画面を見たり操作したりできない検証機（リモートのゲーム PC）で、UI 操作の代わりに処理を自動で動かし、
@@ -14,7 +14,7 @@ namespace SaveDataOptimizer;
 /// </remarks>
 internal static class DebugMarkers
 {
-    public static string Folder => Path.Combine(UnityEngine.Application.persistentDataPath, "Mods", "SaveDataOptimizer");
+    public static string Folder => Path.Combine(UnityEngine.Application.persistentDataPath, "Mods", "CityCheckup");
 
     public static bool Has(string name) => File.Exists(Path.Combine(Folder, name));
 

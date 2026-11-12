@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace SaveDataOptimizer.Core;
+namespace CityCheckup.Core;
 
 /// <summary>
 /// UI へ渡す表示データを JSON 文字列として組み立てる小さな書き出し器。

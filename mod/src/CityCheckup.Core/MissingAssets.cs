@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SaveDataOptimizer.Core;
+namespace CityCheckup.Core;
 
 /// <summary>欠落したアセットが置かれていた物の種類。</summary>
 public enum MissingKind

@@ -4,7 +4,7 @@
     <TargetFramework>net11.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
-    <RootNamespace>SaveDataOptimizer.Core.Tests</RootNamespace>
+    <RootNamespace>CityCheckup.Core.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,6 +13,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\SaveDataOptimizer.Core\SaveDataOptimizer.Core.csproj" />
+    <ProjectReference Include="..\..\src\CityCheckup.Core\CityCheckup.Core.csproj" />
   </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 // パネル全体で共通の定数・書式・見た目。
 
 // C# 側 PanelUISystem.Group と一致させること。
-export const GROUP = "saveDataOptimizer";
+export const GROUP = "cityCheckup";
 
 // ゲームの UI エンジン（Coherent Gameface）は toLocaleString の書式指定を無視するため、桁区切りは自前で付ける。
 export function fmt(n: number | null | undefined, digits = 0): string {

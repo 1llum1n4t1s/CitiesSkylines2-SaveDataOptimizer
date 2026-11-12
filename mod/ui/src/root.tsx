@@ -3,21 +3,18 @@ import { React, api } from "./game";
 import { MissingTab } from "./missing";
 import { LoadTab, loadReady } from "./panel";
 import { GROUP, colors, s } from "./style";
-import { VehiclesTab } from "./vehicles";
 
-// 動作確認用（Mods\SaveDataOptimizer\debug-* があるとき）。パネルを開いた状態・指定のタブで始める。
+// 動作確認用（Mods\CityCheckup\debug-* があるとき）。パネルを開いた状態・指定のタブで始める。
 const debugOpen$ = api.bindValue<boolean>(GROUP, "debugOpen", false);
 const debugTab$ = api.bindValue<string>(GROUP, "debugTab", "load");
 // ゲームで何かを選択中か（選択中はゲームの情報パネルと重なるので、こちらのパネルを畳む）。
 const hasSelection$ = api.bindValue<boolean>(GROUP, "hasSelection", false);
 
-type Tab = "load" | "missing" | "vehicles";
+type Tab = "load" | "missing";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "load", label: "負荷分析" },
-  { key: "missing", label: "欠落アセット" },
-  { key: "vehicles", label: "取り残し車両" },
-];
+  { key: "missing", label: "欠落アセット" },];
 
 export function Root() {
   const debugOpen = api.useValue(debugOpen$);
@@ -31,7 +28,7 @@ export function Root() {
   React.useEffect(() => {
     if (debugOpen) {
       setOpen(true);
-      setTab(debugTab === "missing" || debugTab === "vehicles" ? debugTab : "load");
+      setTab(debugTab === "missing" ? "missing" : "load");
     }
   }, [debugOpen, debugTab]);
 
@@ -76,7 +73,7 @@ export function Root() {
               </button>
             ))}
           </div>
-          {tab === "load" ? <LoadTab /> : tab === "missing" ? <MissingTab /> : <VehiclesTab />}
+          {tab === "load" ? <LoadTab /> : <MissingTab />}
         </div>
       )}
     </div>

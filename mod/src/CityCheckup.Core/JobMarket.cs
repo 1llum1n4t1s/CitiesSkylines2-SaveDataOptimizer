@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SaveDataOptimizer.Core;
+namespace CityCheckup.Core;
 
 /// <summary>
 /// 失業者と空き職場を学歴の段階・地区ごとに数え、「職が足りない」「職が遠い」を判定する。

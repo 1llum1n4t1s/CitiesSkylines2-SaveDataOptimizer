@@ -1,9 +1,9 @@
 {
-  "name": "save-data-optimizer-ui",
+  "name": "city-checkup-ui",
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "bun build src/index.tsx --outfile dist/SaveDataOptimizer.mjs --format esm --target browser --minify-syntax",
+    "build": "bun build src/index.tsx --outfile dist/CityCheckup.mjs --format esm --target browser --minify-syntax",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

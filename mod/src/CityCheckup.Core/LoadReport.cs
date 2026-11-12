@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
-namespace SaveDataOptimizer.Core;
+namespace CityCheckup.Core;
 
 /// <summary>
 /// 負荷分析パネルに出す内容をまとめ、気づいた点（所見）を判定して JSON にする。
