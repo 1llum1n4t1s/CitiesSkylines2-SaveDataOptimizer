@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CityCheckup.Core;
 
@@ -7,7 +8,6 @@ namespace CityCheckup.Core;
 public enum PathfindSource
 {
     JobSearch,
-    JobSwitch,
     Shopping,
     ResidentRepath,
     Trips,
@@ -24,17 +24,18 @@ public enum PathfindSource
 /// <remarks>
 /// システム名は 2026-11 時点のゲーム（ゆろしてぃでの実測）で確認したもの。
 /// ゲームの更新で名前が変わった場合は <see cref="PathfindSource.Other"/> に入るだけで、集計自体は壊れない。
+/// ゲームの集計（PathfindResultSystem.queryStats）は依頼元のシステム単位なので、
+/// 「失業者の職探し」と「働いている人の転職」は分けられない（ゆろしてぃでは転職は職探し全体の約 3%）。
 /// </remarks>
 public static class PathfindSources
 {
     /// <param name="systemName">依頼を出したシステムの型名（例: FindJobSystem）。</param>
-    /// <param name="employedSeeker">職探しの依頼で、探している人がすでに働いているか。職探し以外は null。</param>
-    public static PathfindSource Classify(string systemName, bool? employedSeeker)
+    public static PathfindSource Classify(string systemName)
     {
         switch (systemName)
         {
             case "FindJobSystem":
-                return employedSeeker == true ? PathfindSource.JobSwitch : PathfindSource.JobSearch;
+                return PathfindSource.JobSearch;
             case "ResourceBuyerSystem":
                 return PathfindSource.Shopping;
             case "ResidentAISystem":
@@ -65,7 +66,6 @@ public static class PathfindSources
     public static string Key(PathfindSource source) => source switch
     {
         PathfindSource.JobSearch => "jobSearch",
-        PathfindSource.JobSwitch => "jobSwitch",
         PathfindSource.Shopping => "shopping",
         PathfindSource.ResidentRepath => "residentRepath",
         PathfindSource.Trips => "trips",
@@ -78,91 +78,102 @@ public static class PathfindSources
 }
 
 /// <summary>
-/// 経路探しの依頼数を一定時間ずつ数え、直近の区間の結果を保持する。
+/// ゲームが依頼元ごとに累計している経路探しの結果（PathfindResultSystem.queryStats の 1 行ぶん）。
 /// </summary>
 /// <remarks>
-/// 数え始めから累計すると、パネルを開いた直後と長時間後で意味が変わってしまうため、
-/// 一定の実時間ごとに区間を締め、直近で締めた区間の値を表示に使う。
+/// Work は「探索した道のグラフの量」（m_GraphTraversal をグラフ全体の大きさで割った値）の合計で、
+/// 経路探しにかかった実際の作業量の目安になる。件数より正確に「どの依頼が重いか」を表す。
 /// </remarks>
-public sealed class PathfindTally
+public readonly struct PathfindCounter
 {
-    private readonly long[] m_Counts = new long[Enum.GetValues(typeof(PathfindSource)).Length];
-    private uint m_StartFrame;
-    private double m_StartSeconds;
-    private bool m_Started;
-
-    /// <summary>直近で締めた区間の結果。まだ 1 区間も締めていなければ null。</summary>
-    public PathfindWindow? Last { get; private set; }
-
-    public void Add(PathfindSource source) => m_Counts[(int)source]++;
-
-    /// <summary>区間の開始を記録する（まだ始まっていない場合だけ）。</summary>
-    public void Begin(uint frame, double seconds)
+    public PathfindCounter(long queries, long successes, double work)
     {
-        if (m_Started)
-        {
-            return;
-        }
-        m_Started = true;
-        m_StartFrame = frame;
-        m_StartSeconds = seconds;
-        Array.Clear(m_Counts, 0, m_Counts.Length);
+        Queries = queries;
+        Successes = successes;
+        Work = work;
     }
 
-    /// <summary>区間を締めて <see cref="Last"/> を更新し、次の区間を始める。</summary>
-    public void Close(uint frame, double seconds)
+    public long Queries { get; }
+
+    /// <summary>行き先が 1 つ以上見つかった件数。</summary>
+    public long Successes { get; }
+
+    public double Work { get; }
+
+    public PathfindCounter Plus(PathfindCounter other) => new(Queries + other.Queries, Successes + other.Successes, Work + other.Work);
+}
+
+/// <summary>ある時点のゲームの累計（システム名ごと）。区間の差を取るために覚えておく。</summary>
+public sealed class PathfindSnapshot
+{
+    public PathfindSnapshot(IReadOnlyDictionary<string, PathfindCounter> bySystem, uint frame, double seconds)
     {
-        if (!m_Started)
-        {
-            Begin(frame, seconds);
-            return;
-        }
-        var counts = new Dictionary<PathfindSource, long>();
-        for (var i = 0; i < m_Counts.Length; i++)
-        {
-            counts[(PathfindSource)i] = m_Counts[i];
-        }
-        Last = new PathfindWindow(counts, frame - m_StartFrame, seconds - m_StartSeconds);
-        m_Started = false;
-        Begin(frame, seconds);
+        BySystem = bySystem;
+        Frame = frame;
+        Seconds = seconds;
     }
 
-    /// <summary>パネルを閉じたときなど、数えるのをやめるときに途中の区間を捨てる。</summary>
-    public void Reset()
+    public IReadOnlyDictionary<string, PathfindCounter> BySystem { get; }
+
+    public uint Frame { get; }
+
+    public double Seconds { get; }
+
+    /// <summary>
+    /// 前の時点から今までの区間の増えた分を、依頼元の分類ごとにまとめる。
+    /// </summary>
+    /// <remarks>
+    /// ゲームは街を読み込むと累計を 0 に戻す。前より減っているシステムは、戻ったあとの値をそのまま区間の値とする。
+    /// </remarks>
+    public PathfindWindow Since(PathfindSnapshot before)
     {
-        m_Started = false;
-        Last = null;
-        Array.Clear(m_Counts, 0, m_Counts.Length);
+        var bySource = new Dictionary<PathfindSource, PathfindCounter>();
+        foreach (var pair in BySystem)
+        {
+            var now = pair.Value;
+            var delta = now;
+            if (before.BySystem.TryGetValue(pair.Key, out var then) && now.Queries >= then.Queries)
+            {
+                delta = new PathfindCounter(now.Queries - then.Queries, now.Successes - then.Successes, Math.Max(0, now.Work - then.Work));
+            }
+            var source = PathfindSources.Classify(pair.Key);
+            bySource[source] = bySource.TryGetValue(source, out var sum) ? sum.Plus(delta) : delta;
+        }
+        return new PathfindWindow(bySource, Frame >= before.Frame ? Frame - before.Frame : 0, Seconds - before.Seconds);
     }
 }
 
-/// <summary>締めた 1 区間の依頼数。</summary>
+/// <summary>締めた 1 区間の経路探しの結果（依頼元の分類ごと）。</summary>
 public sealed class PathfindWindow
 {
-    public PathfindWindow(IReadOnlyDictionary<PathfindSource, long> counts, uint simulationFrames, double seconds)
+    public PathfindWindow(IReadOnlyDictionary<PathfindSource, PathfindCounter> bySource, uint simulationFrames, double seconds)
     {
-        Counts = counts;
+        BySource = bySource;
         SimulationFrames = simulationFrames;
         Seconds = seconds;
-        long total = 0;
-        foreach (var n in counts.Values)
-        {
-            total += n;
-        }
-        Total = total;
+        Total = bySource.Values.Aggregate(new PathfindCounter(0, 0, 0), (a, b) => a.Plus(b));
     }
 
-    public IReadOnlyDictionary<PathfindSource, long> Counts { get; }
+    public IReadOnlyDictionary<PathfindSource, PathfindCounter> BySource { get; }
 
     public uint SimulationFrames { get; }
 
     public double Seconds { get; }
 
-    public long Total { get; }
+    public PathfindCounter Total { get; }
 
-    /// <summary>シミュレーション 1 フレームあたりの依頼数。フレームが進んでいなければ NaN。</summary>
-    public double PerFrame(long count) => SimulationFrames == 0 ? double.NaN : (double)count / SimulationFrames;
+    public PathfindCounter Of(PathfindSource source) => BySource.TryGetValue(source, out var c) ? c : new PathfindCounter(0, 0, 0);
 
-    /// <summary>全体に占める割合（0〜1）。依頼が無ければ NaN。</summary>
-    public double Share(long count) => Total == 0 ? double.NaN : (double)count / Total;
+    /// <summary>シミュレーション 1 フレームあたりの件数。フレームが進んでいなければ NaN。</summary>
+    public double PerFrame(long queries) => SimulationFrames == 0 ? double.NaN : (double)queries / SimulationFrames;
+
+    /// <summary>経路探しの作業量全体に占める割合（0〜1）。作業が無ければ NaN。</summary>
+    public double WorkShare(PathfindSource source) => Total.Work <= 0 ? double.NaN : Of(source).Work / Total.Work;
+
+    /// <summary>行き先が見つかった割合（0〜1）。依頼が無ければ NaN。</summary>
+    public double SuccessRate(PathfindSource source)
+    {
+        var c = Of(source);
+        return c.Queries == 0 ? double.NaN : (double)c.Successes / c.Queries;
+    }
 }

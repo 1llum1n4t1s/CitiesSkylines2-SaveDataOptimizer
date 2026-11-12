@@ -26,9 +26,9 @@ public sealed class Mod : IMod
         updateSystem.UpdateAt<PanelUISystem>(SystemUpdatePhase.UIUpdate);
         // 欠落アセットの検出と削除。探す・消すはプレイヤーが UI で選んだときだけ動く。
         updateSystem.UpdateAt<MissingAssetSystem>(SystemUpdatePhase.UIUpdate);
-        // 経路探しの依頼数は、PathfindSetupSystem の直前・直後で読む（パネルを開いている間だけ数える）。
-        updateSystem.UpdateBefore<PathfindDemandBeforeSystem, PathfindSetupSystem>(SystemUpdatePhase.MainLoop);
-        updateSystem.UpdateAfter<PathfindDemandSystem, PathfindSetupSystem>(SystemUpdatePhase.MainLoop);
+        // 速度の内訳と経路探しの作業量を、画面のフレームごとに読む（パネルを開いている間だけ）。
+        // シミュレーションの後に動く UIUpdate の段で読むので、そのフレームの frameDuration が取れる。
+        updateSystem.UpdateBefore<LoadProbeSystem, PanelUISystem>(SystemUpdatePhase.UIUpdate);
         Debug.Log($"{LogPrefix} loaded");
     }
 

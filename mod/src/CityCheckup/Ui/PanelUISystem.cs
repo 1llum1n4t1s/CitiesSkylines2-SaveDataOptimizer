@@ -33,6 +33,7 @@ public sealed partial class PanelUISystem : UISystemBase
     private SimulationSystem m_Simulation = null!;
     private CameraUpdateSystem m_Camera = null!;
     private CityScanner m_Scanner = null!;
+    private LoadProbeSystem m_Probe = null!;
     private readonly LoadReport m_Report = new();
     private bool m_Open;
     private bool m_InGame;
@@ -47,6 +48,7 @@ public sealed partial class PanelUISystem : UISystemBase
         base.OnCreate();
         m_Simulation = World.GetOrCreateSystemManaged<SimulationSystem>();
         m_Camera = World.GetOrCreateSystemManaged<CameraUpdateSystem>();
+        m_Probe = World.GetOrCreateSystemManaged<LoadProbeSystem>();
         m_Scanner = new CityScanner(
             EntityManager,
             GetEntityQuery(CityScanner.JobSeekersDesc()),
@@ -94,9 +96,9 @@ public sealed partial class PanelUISystem : UISystemBase
         m_InGame = mode == GameMode.Game;
         // 読み込み前に開いていた場合も、読み込み完了の直後に数え直す。
         m_NextScan = 0f;
-        PathfindDemandSystem.Tally.Reset();
-        PathfindDemandSystem.Tally.Begin(m_Simulation.frameIndex, UnityEngine.Time.realtimeSinceStartup);
+        m_Probe.Begin();
         m_Report.Pathfind = null;
+        m_Report.Speed = null;
         m_Report.Jobs = null;
     }
 
@@ -114,20 +116,26 @@ public sealed partial class PanelUISystem : UISystemBase
             return;
         }
         m_NextRefresh = now + RefreshSeconds;
+        // 動作確認用: debug-speed3 があれば、速度を ×3 に保つ（遅れの原因の切り分けを確かめるため）。
+        // ゲームは読み込み完了の後に速度を設定し直すので、読み込み完了時ではなくここで毎秒そろえる。
+        if (m_DebugReport && m_Simulation.selectedSpeed > 0 && m_Simulation.selectedSpeed != 3f && DebugMarkers.Has("debug-speed3"))
+        {
+            m_Simulation.selectedSpeed = 3f;
+            Debug.Log($"{Mod.LogPrefix} debug speed x3");
+        }
         m_Report.SelectedSpeed = m_Simulation.selectedSpeed;
         m_Report.ActualSpeed = m_Simulation.smoothSpeed;
 
         if (m_Open && now >= m_NextScan)
         {
             m_NextScan = now + ScanSeconds;
-            PathfindDemandSystem.Tally.Close(m_Simulation.frameIndex, now);
-            m_Report.Pathfind = PathfindDemandSystem.Tally.Last;
+            (m_Report.Pathfind, m_Report.Speed) = m_Probe.Close();
             var watch = Stopwatch.StartNew();
             m_Scanner.Fill(m_Report);
             m_Report.ScanMilliseconds = watch.Elapsed.TotalMilliseconds;
             if (m_DebugReport)
             {
-                Debug.Log($"{Mod.LogPrefix} report {m_Report.ToJson(!PathfindDemandSystem.Unsupported)}");
+                Debug.Log($"{Mod.LogPrefix} report {m_Report.ToJson(true)}");
                 // 経路探しの集計が出そろった 2 回目以降の集計で 1 度だけ画面を保存する。
                 m_DebugScans++;
                 if (m_DebugScans == 3)
@@ -137,7 +145,7 @@ public sealed partial class PanelUISystem : UISystemBase
                 }
             }
         }
-        m_Status.Update(m_Report.ToJson(m_Open && !PathfindDemandSystem.Unsupported));
+        m_Status.Update(m_Report.ToJson(m_Open));
     }
 
     private void OnSetOpen(bool open)
@@ -152,15 +160,15 @@ public sealed partial class PanelUISystem : UISystemBase
             return;
         }
         m_Open = open;
-        PathfindDemandSystem.Collecting = open;
+        m_Probe.Collecting = open;
         if (open)
         {
-            // 開いた直後に職・世帯を数え、経路探しは次の区間（ScanSeconds 後）から表示する。
-            PathfindDemandSystem.Tally.Reset();
-            PathfindDemandSystem.Tally.Begin(m_Simulation.frameIndex, UnityEngine.Time.realtimeSinceStartup);
+            // 開いた直後に職・世帯を数え、経路探しと速度の内訳は次の区間（ScanSeconds 後）から表示する。
+            m_Probe.Begin();
             m_NextScan = 0f;
             m_NextRefresh = 0f;
             m_Report.Pathfind = null;
+            m_Report.Speed = null;
         }
     }
 

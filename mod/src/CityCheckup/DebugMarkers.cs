@@ -11,6 +11,7 @@ namespace CityCheckup;
 /// - debug-report : 負荷分析を開いた状態で始め、集計結果をログに書き、画面を保存する
 /// - debug-missing: 欠落アセットを探して一覧をログに書き、最初の 1 か所へカメラを移して画面を保存する
 /// - debug-delete : debug-missing に加えて、消してよいものを全部消し、消した後の状態をログに書く
+/// - debug-speed3 : debug-report と一緒に使い、速度を ×3 に保つ（遅れの原因の切り分けを確かめるため）
 /// </remarks>
 internal static class DebugMarkers
 {

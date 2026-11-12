@@ -6,40 +6,82 @@ namespace CityCheckup.Core.Tests;
 public sealed class PathfindSourcesTests
 {
     [TestMethod]
-    [DataRow("FindJobSystem", false, PathfindSource.JobSearch)]
-    [DataRow("FindJobSystem", true, PathfindSource.JobSwitch)]
-    [DataRow("ResourceBuyerSystem", null, PathfindSource.Shopping)]
-    [DataRow("TaxiDispatchSystem", null, PathfindSource.ServiceDispatch)]
-    [DataRow("PersonalCarAISystem", null, PathfindSource.VehicleRepath)]
-    [DataRow("ResidentAISystem", null, PathfindSource.ResidentRepath)]
-    [DataRow("LeisureSystem", null, PathfindSource.Trips)]
-    [DataRow("SomethingNewSystem", null, PathfindSource.Other)]
-    public void Classify_MapsKnownSystems(string system, bool? employed, PathfindSource expected)
-        => Assert.AreEqual(expected, PathfindSources.Classify(system, employed));
+    [DataRow("FindJobSystem", PathfindSource.JobSearch)]
+    [DataRow("ResourceBuyerSystem", PathfindSource.Shopping)]
+    [DataRow("TaxiDispatchSystem", PathfindSource.ServiceDispatch)]
+    [DataRow("PersonalCarAISystem", PathfindSource.VehicleRepath)]
+    [DataRow("ResidentAISystem", PathfindSource.ResidentRepath)]
+    [DataRow("LeisureSystem", PathfindSource.Trips)]
+    [DataRow("SomethingNewSystem", PathfindSource.Other)]
+    public void Classify_MapsKnownSystems(string system, PathfindSource expected)
+        => Assert.AreEqual(expected, PathfindSources.Classify(system));
 
     [TestMethod]
-    public void Tally_ClosesWindowWithRatesAndResetsCounts()
+    public void Snapshot_DiffGroupsSystemsAndWeighsByWork()
     {
-        var tally = new PathfindTally();
-        tally.Begin(100, 0);
-        tally.Add(PathfindSource.JobSearch);
-        tally.Add(PathfindSource.JobSearch);
-        tally.Add(PathfindSource.Shopping);
-        tally.Close(110, 10);
+        var before = new PathfindSnapshot(new Dictionary<string, PathfindCounter>
+        {
+            ["FindJobSystem"] = new(100, 20, 5.0),
+            ["ResourceBuyerSystem"] = new(50, 50, 1.0),
+        }, frame: 1000, seconds: 0);
+        var after = new PathfindSnapshot(new Dictionary<string, PathfindCounter>
+        {
+            ["FindJobSystem"] = new(200, 40, 11.0),
+            ["ResourceBuyerSystem"] = new(250, 250, 3.0),
+            ["TaxiDispatchSystem"] = new(10, 10, 0.5),
+        }, frame: 1100, seconds: 10);
 
-        var w = tally.Last!;
-        Assert.AreEqual(3, w.Total);
-        Assert.AreEqual(10u, w.SimulationFrames);
-        Assert.AreEqual(0.2, w.PerFrame(w.Counts[PathfindSource.JobSearch]), 1e-9);
-        Assert.AreEqual(2.0 / 3, w.Share(w.Counts[PathfindSource.JobSearch]), 1e-9);
+        var w = after.Since(before);
+        Assert.AreEqual(100u, w.SimulationFrames);
+        Assert.AreEqual(310, w.Total.Queries);
+        // 件数は買い物のほうが多いが、作業量は職探しが 6 / 8.5 を占める。
+        Assert.AreEqual(6.0 / 8.5, w.WorkShare(PathfindSource.JobSearch), 1e-9);
+        Assert.AreEqual(0.2, w.SuccessRate(PathfindSource.JobSearch), 1e-9);
+        Assert.AreEqual(1.0, w.PerFrame(w.Of(PathfindSource.JobSearch).Queries), 1e-9);
+        // 前回に無かったシステムは、今回の値がそのまま区間の値になる。
+        Assert.AreEqual(10, w.Of(PathfindSource.ServiceDispatch).Queries);
+    }
 
-        // 次の区間は 0 から数え直す。
-        tally.Close(120, 20);
-        Assert.AreEqual(0, tally.Last!.Total);
-        Assert.IsTrue(double.IsNaN(tally.Last.Share(0)));
+    [TestMethod]
+    public void Snapshot_TreatsResetCountersAsFreshValues()
+    {
+        // 街を読み込み直すとゲームの累計は 0 に戻る。減っていたら、戻った後の値をそのまま使う。
+        var before = new PathfindSnapshot(new Dictionary<string, PathfindCounter> { ["FindJobSystem"] = new(500, 10, 9.0) }, 10, 0);
+        var after = new PathfindSnapshot(new Dictionary<string, PathfindCounter> { ["FindJobSystem"] = new(30, 3, 1.0) }, 20, 1);
+        Assert.AreEqual(30, after.Since(before).Of(PathfindSource.JobSearch).Queries);
     }
 }
 
+[TestClass]
+public sealed class SpeedSamplerTests
+{
+    [TestMethod]
+    [DataRow(uint.MaxValue, 100u, 1.0)]
+    [DataRow(200u, 100u, 1.0)]
+    [DataRow(125u, 100u, 0.5)]
+    [DataRow(100u, 100u, 0.0)]
+    [DataRow(50u, 100u, 0.0)]
+    public void PathfindSpeedFactor_MatchesGameThrottle(uint pending, uint frame, double expected)
+        => Assert.AreEqual(expected, SpeedSampler.PathfindSpeedFactor(pending, frame), 1e-9);
+
+    [TestMethod]
+    public void Close_ReportsWaitShareBudgetAndIgnoresPause()
+    {
+        var s = new SpeedSampler();
+        // 1 秒は速度を半分に絞られ、1 秒は全速。一時停止の 1 秒は数えない。
+        s.Add(1.0, 1f, 0.5f, 0.5, 0.010, 4);
+        s.Add(1.0, 1f, 1f, 1.0, 0.020, 0);
+        s.Add(1.0, 0f, 0f, 0.0, 0.0, 100);
+        var w = s.Close(3.0);
+        Assert.AreEqual(2.0, w.RunningSeconds, 1e-9);
+        Assert.AreEqual(0.25, w.PathfindWaitShare, 1e-9);
+        Assert.AreEqual(15.0, w.SimFrameMilliseconds, 1e-9);
+        Assert.AreEqual(1000.0 / 60, w.SimFrameBudgetMilliseconds, 1e-9);
+        Assert.AreEqual(0.75, w.AverageActualSpeed, 1e-9);
+        Assert.AreEqual(2.0, w.AveragePendingRequests, 1e-9);
+        Assert.AreEqual(1.0, w.FramesPerSecond, 1e-9);
+    }
+}
 [TestClass]
 public sealed class JobMarketTests
 {
@@ -108,7 +150,7 @@ public sealed class JobMarketTests
 public sealed class LoadReportTests
 {
     [TestMethod]
-    public void Findings_ReportsSlowSpeedJobShortageAndFarJobs()
+    public void Findings_ExplainSlowdownHeaviestPathfindAndJobs()
     {
         var jobs = new JobMarket();
         for (var i = 0; i < 2000; i++)
@@ -116,25 +158,33 @@ public sealed class LoadReportTests
             jobs.AddUnemployed(0, 0, 0, 0);
         }
         jobs.AddVacancies(0, 100, 9000, 0, 0);
-        var counts = Enum.GetValues<PathfindSource>().ToDictionary(s => s, _ => 0L);
-        counts[PathfindSource.JobSearch] = 30;
-        counts[PathfindSource.Shopping] = 70;
+        var pathfind = new PathfindWindow(new Dictionary<PathfindSource, PathfindCounter>
+        {
+            [PathfindSource.JobSearch] = new(30, 6, 6.0),
+            [PathfindSource.Shopping] = new(70, 70, 2.0),
+        }, 10, 10);
+        var speed = new SpeedSampler();
+        speed.Add(10, 1f, 0.5f, 0.6, 0.030, 100);
         var report = new LoadReport
         {
             SelectedSpeed = 1,
             ActualSpeed = 0.5f,
             Jobs = jobs,
-            Pathfind = new PathfindWindow(counts, 10, 10),
+            Pathfind = pathfind,
+            Speed = speed.Close(10),
         };
 
         var texts = report.Findings().Select(f => f.Text).ToList();
-        Assert.AreEqual(4, texts.Count, string.Join("\n", texts));
+        Assert.AreEqual(6, texts.Count, string.Join("\n", texts));
         Assert.IsTrue(texts[0].Contains("×0.50"));
-        Assert.IsTrue(texts[1].Contains("30%"));
-        Assert.IsTrue(texts[2].Contains("2,000"));
-        Assert.IsTrue(texts[3].Contains("全部合わせても"));
+        // 経路探し待ちで 40% の時間速度を落とし、1 フレーム 30 ms は上限 16.7 ms を超えている。
+        Assert.IsTrue(texts[1].Contains("40%"), texts[1]);
+        Assert.IsTrue(texts[2].Contains("30.0 ms") && texts[2].Contains("16.7 ms"), texts[2]);
+        // 件数では買い物が多いが、作業量では職探しが 75%、成功は 20%。
+        Assert.IsTrue(texts[3].Contains("75%") && texts[3].Contains("職探し") && texts[3].Contains("20%"), texts[3]);
+        Assert.IsTrue(texts[4].Contains("2,000"));
+        Assert.IsTrue(texts[5].Contains("全部合わせても"));
     }
-
     [TestMethod]
     public void Findings_SaysNothingFoundForHealthyCity()
     {

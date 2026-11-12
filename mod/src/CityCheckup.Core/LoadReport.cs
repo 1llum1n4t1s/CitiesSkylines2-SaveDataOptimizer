@@ -17,8 +17,11 @@ public sealed class LoadReport
     /// <summary>実際の速度が設定速度のこの割合を下回ったら「追いついていない」とみなす。</summary>
     public const double SlowSpeedRatio = 0.8;
 
-    /// <summary>失業者の職探しが経路探しのこの割合以上なら、主な負荷として知らせる。</summary>
-    public const double JobSearchShareWarning = 0.2;
+    /// <summary>ひとつの依頼元が経路探しの作業量のこの割合以上なら、主な負荷として知らせる。</summary>
+    public const double PathfindWorkShareWarning = 0.25;
+
+    /// <summary>経路探し待ちで速度を絞られた時間がこの割合以上なら、遅れの主な原因とみなす。</summary>
+    public const double PathfindWaitWarning = 0.2;
 
     /// <summary>空き職場のある地区までこの距離（m）以上なら「職が遠い」とみなす。</summary>
     public const double FarJobsMeters = 4000;
@@ -39,6 +42,9 @@ public sealed class LoadReport
     /// <summary>直近の経路探しの集計。パネルを開いたばかりで区間が締まっていなければ null。</summary>
     public PathfindWindow? Pathfind { get; set; }
 
+    /// <summary>直近の区間の速度の内訳（経路探し待ち・処理時間）。まだ締まっていなければ null。</summary>
+    public SpeedWindow? Speed { get; set; }
+
     /// <summary>職と失業者の集計。まだ数えていなければ null。</summary>
     public JobMarket? Jobs { get; set; }
 
@@ -48,22 +54,49 @@ public sealed class LoadReport
     public IReadOnlyList<Finding> Findings()
     {
         var list = new List<Finding>();
-        if (SelectedSpeed > 0 && ActualSpeed < SelectedSpeed * SlowSpeedRatio)
+        // 遅れの判定は、その瞬間の値ではなく区間の平均で行う（一瞬の揺れで警告が出たり消えたりしないように）。
+        var selected = Speed is { RunningSeconds: > 0 } sw ? sw.AverageSelectedSpeed : SelectedSpeed;
+        var actual = Speed is { RunningSeconds: > 0 } sw2 ? sw2.AverageActualSpeed : ActualSpeed;
+        if (selected > 0 && actual < selected * SlowSpeedRatio)
         {
             list.Add(new Finding(FindingLevel.Warning, string.Format(
                 CultureInfo.InvariantCulture,
                 "設定速度 ×{0:0.#} に対して、実際の速度は ×{1:0.00} です。シミュレーションが追いついていません。",
-                SelectedSpeed, ActualSpeed)));
-        }
-        if (Pathfind is { Total: > 0 } p)
-        {
-            var share = p.Share(p.Counts[PathfindSource.JobSearch]);
-            if (share >= JobSearchShareWarning)
+                selected, actual)));
+            if (Speed is { } s)
             {
+                // 遅れの原因を、ゲームが速度を落とす 2 つの仕組みに分けて伝える。
+                if (s.PathfindWaitShare >= PathfindWaitWarning)
+                {
+                    list.Add(new Finding(FindingLevel.Warning, string.Format(
+                        CultureInfo.InvariantCulture,
+                        "遅れの主な原因は経路探しの結果待ちです（時間の {0:0}% で速度を落としています）。下の「経路探しの作業量」が多い依頼を減らすと改善します。",
+                        s.PathfindWaitShare * 100)));
+                }
+                if (s.SimFrameMilliseconds > s.SimFrameBudgetMilliseconds)
+                {
+                    list.Add(new Finding(FindingLevel.Warning, string.Format(
+                        CultureInfo.InvariantCulture,
+                        "シミュレーション 1 フレームの処理に平均 {0:0.0} ms かかり、設定速度に必要な {1:0.0} ms を超えています。街の人や物の多さで処理が重くなっています。",
+                        s.SimFrameMilliseconds, s.SimFrameBudgetMilliseconds)));
+                }
+            }
+        }
+        if (Pathfind is { } p && p.Total.Work > 0)
+        {
+            // 件数ではなく、ゲームが記録している探索の作業量で、いちばん重い依頼元を示す。
+            var top = p.BySource.OrderByDescending(x => x.Value.Work).First().Key;
+            var share = p.WorkShare(top);
+            if (share >= PathfindWorkShareWarning)
+            {
+                var success = p.SuccessRate(top);
+                var detail = top == PathfindSource.JobSearch
+                    ? string.Format(CultureInfo.InvariantCulture, "行き先が見つかったのは {0:0}% だけで、職に就けない人が繰り返し探しています。", success * 100)
+                    : string.Format(CultureInfo.InvariantCulture, "行き先が見つかったのは {0:0}% です。", success * 100);
                 list.Add(new Finding(FindingLevel.Warning, string.Format(
                     CultureInfo.InvariantCulture,
-                    "経路探しの {0:0}% が失業者の職探しです。職に就けない人が繰り返し探しています。",
-                    share * 100)));
+                    "経路探しの作業量の {0:0}% は「{1}」です。{2}",
+                    share * 100, SourceLabel(top), detail)));
             }
         }
         if (Jobs is { } jobs)
@@ -100,8 +133,23 @@ public sealed class LoadReport
         json.Key("collecting").Value(collecting);
         json.Key("speed").BeginObject()
             .Key("selected").Value(SelectedSpeed)
-            .Key("actual").Value(ActualSpeed)
-            .EndObject();
+            .Key("actual").Value(ActualSpeed);
+        json.Key("window");
+        if (Speed is { } s)
+        {
+            json.BeginObject()
+                .Key("pathfindWait").Value(s.PathfindWaitShare)
+                .Key("simFrameMs").Value(s.SimFrameMilliseconds)
+                .Key("budgetMs").Value(s.SimFrameBudgetMilliseconds)
+                .Key("pending").Value(s.AveragePendingRequests)
+                .Key("fps").Value(s.FramesPerSecond)
+                .EndObject();
+        }
+        else
+        {
+            json.Value((string?)null);
+        }
+        json.EndObject();
         json.Key("citizens").Value(Citizens);
         json.Key("households").BeginObject()
             .Key("homeless").Value(HomelessHouseholds)
@@ -115,16 +163,18 @@ public sealed class LoadReport
             json.BeginObject()
                 .Key("seconds").Value(p.Seconds)
                 .Key("frames").Value((long)p.SimulationFrames)
-                .Key("total").Value(p.Total)
-                .Key("perFrame").Value(p.PerFrame(p.Total))
+                .Key("total").Value(p.Total.Queries)
+                .Key("perFrame").Value(p.PerFrame(p.Total.Queries))
                 .Key("sources").BeginArray();
-            foreach (var pair in p.Counts.Where(c => c.Value > 0).OrderByDescending(c => c.Value))
+            // 作業量の多い順に並べる（件数が少なくても 1 件が重い依頼を上に出す）。
+            foreach (var pair in p.BySource.Where(c => c.Value.Queries > 0).OrderByDescending(c => c.Value.Work))
             {
                 json.BeginObject()
                     .Key("key").Value(PathfindSources.Key(pair.Key))
-                    .Key("count").Value(pair.Value)
-                    .Key("perFrame").Value(p.PerFrame(pair.Value))
-                    .Key("share").Value(p.Share(pair.Value))
+                    .Key("count").Value(pair.Value.Queries)
+                    .Key("perFrame").Value(p.PerFrame(pair.Value.Queries))
+                    .Key("workShare").Value(p.WorkShare(pair.Key))
+                    .Key("successRate").Value(p.SuccessRate(pair.Key))
                     .EndObject();
             }
             json.EndArray().EndObject();
@@ -172,6 +222,20 @@ public sealed class LoadReport
         json.EndArray();
         return json.EndObject().ToString();
     }
+
+    /// <summary>所見の文に使う依頼元の表示名（UI の SOURCE_LABELS と同じ言い方にそろえる）。</summary>
+    public static string SourceLabel(PathfindSource source) => source switch
+    {
+        PathfindSource.JobSearch => "職探し",
+        PathfindSource.Shopping => "市民の買い物",
+        PathfindSource.ResidentRepath => "歩行者の経路の引き直し",
+        PathfindSource.Trips => "外出・レジャー",
+        PathfindSource.School => "学校探し",
+        PathfindSource.Home => "住まい探し",
+        PathfindSource.ServiceDispatch => "サービス車両の配車",
+        PathfindSource.VehicleRepath => "車両の経路の引き直し",
+        _ => "その他",
+    };
 
     private static void WriteArray(JsonText json, IEnumerable<long> values)
     {

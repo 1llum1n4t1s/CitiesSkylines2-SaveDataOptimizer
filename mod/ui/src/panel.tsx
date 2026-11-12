@@ -7,7 +7,12 @@ const status$ = api.bindValue<string>(GROUP, "status", "{}");
 // LoadReport.ToJson の形。値が null のときは「まだ数えていない」か「測れない」。
 interface Report {
   collecting?: boolean;
-  speed?: { selected: number | null; actual: number | null };
+  speed?: {
+    selected: number | null;
+    actual: number | null;
+    // 直近の区間（約 10 秒）の内訳。pathfindWait は経路探し待ちで速度を落とした時間の割合。
+    window: { pathfindWait: number | null; simFrameMs: number | null; budgetMs: number | null; pending: number | null; fps: number | null } | null;
+  };
   citizens?: number;
   households?: { homeless: number; movingAway: number };
   scanMs?: number | null;
@@ -16,7 +21,8 @@ interface Report {
     frames: number;
     total: number;
     perFrame: number | null;
-    sources: { key: string; count: number; perFrame: number | null; share: number | null }[];
+    // workShare: 経路探しの作業量（探索した道の量）に占める割合。successRate: 行き先が見つかった割合。
+    sources: { key: string; count: number; perFrame: number | null; workShare: number | null; successRate: number | null }[];
   } | null;
   jobs?: {
     unemployed: number[];
@@ -31,8 +37,7 @@ interface Report {
 
 // 経路探しの依頼元（Core の PathfindSources.Key）の表示名。
 const SOURCE_LABELS: Record<string, string> = {
-  jobSearch: "失業者の職探し",
-  jobSwitch: "転職先探し",
+  jobSearch: "職探し",
   shopping: "市民の買い物",
   residentRepath: "歩行者の経路の引き直し",
   trips: "外出・レジャー",
@@ -87,6 +92,14 @@ function Speed({ report }: { report: Report }) {
       <div style={s.heading}>シミュレーションの速度</div>
       <Row label="設定した速度" value={`×${fmt(sp?.selected, 1)}`} />
       <Row label="実際の速度" value={`×${fmt(sp?.actual, 2)}`} />
+      {sp?.window && (
+        <div>
+          <Row label="経路探し待ちで遅れた時間" value={pct(sp.window.pathfindWait)} />
+          <Row label="1 フレームの処理時間" value={`${fmt(sp.window.simFrameMs, 1)} ms（上限 ${fmt(sp.window.budgetMs, 1)} ms）`} />
+          <Row label="結果待ちの経路探し" value={`${fmt(sp.window.pending, 0)} 件`} />
+          <Row label="画面のフレームレート" value={`${fmt(sp.window.fps, 0)} fps`} />
+        </div>
+      )}
       <Row label="人のデータ（観光客・通勤者を含む）" value={`${fmt(report.citizens)} 人`} />
     </div>
   );
@@ -96,20 +109,22 @@ function Pathfind({ report }: { report: Report }) {
   const p = report.pathfind;
   return (
     <div style={s.section}>
-      <div style={s.heading}>経路探しの依頼</div>
-      {!report.collecting && <div style={s.sub}>このゲームの版では数えられません。</div>}
-      {report.collecting && !p && <div style={s.sub}>数えています（10 秒ほどで表示します）…</div>}
+      <div style={s.heading}>経路探しの作業量</div>
+      {!p && <div style={s.sub}>数えています（10 秒ほどで表示します）…</div>}
       {p && (
         <div>
-          <Row label="1 フレームあたり" value={`${fmt(p.perFrame, 1)} 件`} />
+          <Row label="1 フレームあたりの依頼" value={`${fmt(p.perFrame, 1)} 件`} />
+          <div style={{ ...s.sub, marginTop: "2rem" }}>
+            {"割合は探索した道の量（ゲームが記録する作業量）で、件数ではありません。"}
+          </div>
           {p.sources.map((src) => (
             <div key={src.key} style={{ marginTop: "4rem" }}>
               <div style={s.row}>
                 <div>{SOURCE_LABELS[src.key] ?? src.key}</div>
-                <div>{`${pct(src.share)}（${fmt(src.perFrame, 1)} 件）`}</div>
+                <div>{`${pct(src.workShare)}（${fmt(src.perFrame, 1)} 件・成功 ${pct(src.successRate)}）`}</div>
               </div>
               <div style={{ height: "4rem", background: colors.line, marginTop: "2rem" }}>
-                <div style={{ height: "4rem", width: `${Math.round((src.share ?? 0) * 100)}%`, background: colors.bar }} />
+                <div style={{ height: "4rem", width: `${Math.round((src.workShare ?? 0) * 100)}%`, background: colors.bar }} />
               </div>
             </div>
           ))}
