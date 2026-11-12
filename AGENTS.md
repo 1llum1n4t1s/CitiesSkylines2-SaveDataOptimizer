@@ -69,6 +69,6 @@ Rust ツール（`Cargo.toml` の `cok-inspector`）は配布しておらず、�
 - **公開用のゲーム PC は本人が普段遊ぶ PC**。スクリプトはゲームが起動中なら何もせずに中止する。起動中で止まったら、ゲームを終了してよいか本人に確認してから再実行する。ゲームを勝手に終了しない。
 - ModPublisher はゲームでログインした Paradox アカウントで自動ログインする。パスワードは扱わない。ゲーム PC に .NET 6 が無くても `DOTNET_ROLL_FORWARD=Major` で動く（スクリプトが設定する）。
 - **deploy**: なし（`DEPLOY_REQUIREMENT=not-applicable`）。Paradox Mods への公開そのものが配布。
-- **署名・CI**: なし。ローカルのスクリプトだけで公開する。
+- **署名・CI**: なし。ローカルのスクリプトだけで公開する。依存の更新は `.github/dependabot.yml`（cargo・nuget はテストのみ・bun、週次で minor/patch をまとめる）が PR にする。
 - **告知**: 初回公開は非公開（Hidden、`PublishConfiguration.xml` の注記と README を参照）。Paradox Mods 上で一般公開になっている版だけが、公開後の X 告知の対象になる。公開範囲は本人に確認する。
-- **既知の経緯**: 0.1.0 は 2026-11-12 に release branch を作らずに公開した（公開時のコミットは `2692b58`）。0.1.1 以降は `release/<版>` branch を作る。
+- **既知の経緯**: 0.1.0 は 2026-11-12 に release branch を作らずに公開した（公開時のコミットは `2692b58`）。1.0.0 以降は `release/<版>` branch を作る（`release/1.0.0` がある）。
