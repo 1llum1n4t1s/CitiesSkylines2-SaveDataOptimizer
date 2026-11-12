@@ -2,6 +2,7 @@
 import { React, api } from "./game";
 import { MissingTab } from "./missing";
 import { LoadTab, loadReady } from "./panel";
+import { useTexts } from "./i18n";
 import { GROUP, colors, s } from "./style";
 
 // 動作確認用（Mods\CityCheckup\debug-* があるとき）。パネルを開いた状態・指定のタブで始める。
@@ -12,11 +13,14 @@ const hasSelection$ = api.bindValue<boolean>(GROUP, "hasSelection", false);
 
 type Tab = "load" | "missing";
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: "load", label: "負荷分析" },
-  { key: "missing", label: "欠落アセット" },];
+// タブの表示名は言語ごとの文言（i18n.ts）から引く。
+const TABS: { key: Tab; label: (t: ReturnType<typeof useTexts>) => string }[] = [
+  { key: "load", label: (t) => t.tabLoad },
+  { key: "missing", label: (t) => t.tabMissing },
+];
 
 export function Root() {
+  const texts = useTexts();
   const debugOpen = api.useValue(debugOpen$);
   const debugTab = api.useValue(debugTab$);
   const ready = loadReady();
@@ -58,7 +62,7 @@ export function Root() {
           }
         }}
       >
-        {open && hasSelection ? "街の診断（選択中は畳んでいます）" : "街の診断"}
+        {open && hasSelection ? texts.toggleCollapsed : texts.toggle}
       </button>
       {open && !hasSelection && (
         <div style={s.panel}>
@@ -69,7 +73,7 @@ export function Root() {
                 style={{ ...s.smallButton, marginRight: "6rem", fontSize: "13rem", background: t.key === tab ? colors.tabActive : colors.button }}
                 onClick={() => setTab(t.key)}
               >
-                {t.label}
+                {t.label(texts)}
               </button>
             ))}
           </div>

@@ -4,26 +4,29 @@
 		（Cities2_Data\Content\Game\.ModdingToolchain\ColossalOrder.ModTemplate.1.0.0.nupkg）に合わせている。
 		初回公開（Publish）の後に表示される ModId を下の ModId に書き戻すこと。2 回目以降の更新（NewVersion）に必要。
 		複数行の欄は行頭に空白を入れないこと（ModPublisher が字下げも本文として扱うため）。
+		画像のパスは、公開ツールを動かす作業フォルダー（Properties の親）からの相対パス。
 	-->
 	<ModId Value="" />
 	<DisplayName Value="City Checkup" />
-	<ShortDescription Value="Find out why your city is slow, and clean up objects left behind by removed mods." />
+	<ShortDescription Value="Find out why your city runs slowly, and clean up objects left behind by removed mods." />
 	<LongDescription>
 # City Checkup
 
-A health check for your city. Open it from the button at the top left of the screen.
+A health check for your city. Open it from the **City Checkup** button at the top left of the screen.
 
-**Note:** the in-game interface is currently in Japanese only.
+The panel follows your game language: Japanese when the game is set to Japanese, English otherwise.
 
 ## Load analysis
-* Shows which systems request the most pathfinding (job search, shopping, service dispatch, ...).
-* Compares the simulation speed you set with the speed the game actually reaches.
-* Counts job seekers and free jobs per education level, and lists districts with many unemployed citizens but no jobs nearby. A jump button moves the camera there.
-* Counting runs only while this tab is open.
+* Tells you why the simulation runs slower than the speed you set, and splits the cause in two:
+* **Waiting for pathfinding**: how much of the time the game slowed down because pathfinding results were late.
+* **Simulation frame time**: how long one simulation frame takes compared with the time your speed allows.
+* Shows which kinds of requests do the most pathfinding work (job search, shopping, service dispatch, ...) and how often they find a destination. The numbers come from the statistics the game itself records.
+* Counts job seekers and open jobs per education level, and lists districts with many unemployed citizens but no jobs nearby. A **Go** button moves the camera there.
+* Measuring runs only while this tab is open.
 
 ## Missing assets
-* Lists objects that were placed with mods you have since uninstalled, grouped by asset name.
-* Jump to each one, select the groups you want, and delete them.
+* Lists objects placed with mods you have since uninstalled, grouped by asset name.
+* **Go** selects each one and moves the camera to it. Select the groups you want and delete them.
 * Roads, tracks and areas are listed but cannot be deleted here.
 
 **Deleting cannot be undone.** If you change your mind, load the city again without saving.
@@ -32,15 +35,16 @@ A health check for your city. Open it from the button at the top left of the scr
 
 # City Checkup（街の診断）
 
-画面左上の **街の診断** ボタンから開きます。
+画面左上の **街の診断** ボタンから開きます。ゲームの言語が日本語なら日本語、それ以外は英語で表示します。
 
-* **負荷分析**：経路探しを多く頼んでいる処理、実際のシミュレーション速度、学歴別の求職者と空き職場、職が足りない地区を表示します。
-* **欠落アセット**：アンインストールした mod の物を探し、選んで削除できます。
+* **負荷分析**：設定した速度より遅い原因を「経路探しの結果待ち」と「1 フレームの処理時間」に分けて表示します。経路探しの作業量が多い依頼、学歴別の求職者と空き職場、職が足りない地区も表示します。
+* **欠落アセット**：アンインストールした mod の物を探し、見に行ったり、選んで削除したりできます。
+
 削除は元に戻せません。やり直すときは、保存せずに街を読み込み直してください。
 	</LongDescription>
 	<Thumbnail Value="Properties/Thumbnail.png" />
-	<!-- 画面写真は未定（掲載前に用意する）。 -->
-	<Screenshot Value="" />
+	<Screenshot Value="Properties/Screenshot-LoadAnalysis.jpg" />
+	<Screenshot Value="Properties/Screenshot-MissingAssets.jpg" />
 	<Tag Value="Code Mod" />
 	<ForumLink Value="" />
 	<ModVersion Value="0.1.0" />
@@ -51,5 +55,5 @@ A health check for your city. Open it from the button at the top left of the scr
 	<ChangeLog>
 First release.
 	</ChangeLog>
-	<ExternalLink Type="" Url="" />
+	<ExternalLink Type="github" Url="https://github.com/1llum1n4t1s/CityCheckup" />
 </Publish>

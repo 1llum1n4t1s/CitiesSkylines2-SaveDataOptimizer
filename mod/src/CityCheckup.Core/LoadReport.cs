@@ -51,6 +51,11 @@ public sealed class LoadReport
     /// <summary>直近の集計（職・世帯）にかかった時間。mod 自身の負荷を隠さず見せるため。</summary>
     public double ScanMilliseconds { get; set; }
 
+    /// <summary>所見の文の言語（ゲームの言語設定に合わせて mod 側が設定する）。</summary>
+    public UiLanguage Language { get; set; } = UiLanguage.Japanese;
+
+    private string L(string japanese, string english) => Language == UiLanguage.English ? english : japanese;
+
     public IReadOnlyList<Finding> Findings()
     {
         var list = new List<Finding>();
@@ -61,7 +66,7 @@ public sealed class LoadReport
         {
             list.Add(new Finding(FindingLevel.Warning, string.Format(
                 CultureInfo.InvariantCulture,
-                "設定速度 ×{0:0.#} に対して、実際の速度は ×{1:0.00} です。シミュレーションが追いついていません。",
+                L("設定速度 ×{0:0.#} に対して、実際の速度は ×{1:0.00} です。シミュレーションが追いついていません。", "Simulation speed is ×{1:0.00} against the ×{0:0.#} you set. The simulation cannot keep up."),
                 selected, actual)));
             if (Speed is { } s)
             {
@@ -70,14 +75,14 @@ public sealed class LoadReport
                 {
                     list.Add(new Finding(FindingLevel.Warning, string.Format(
                         CultureInfo.InvariantCulture,
-                        "遅れの主な原因は経路探しの結果待ちです（時間の {0:0}% で速度を落としています）。下の「経路探しの作業量」が多い依頼を減らすと改善します。",
+                        L("遅れの主な原因は経路探しの結果待ちです（時間の {0:0}% で速度を落としています）。下の「経路探しの作業量」が多い依頼を減らすと改善します。", "The main cause is waiting for pathfinding results (the game slowed down {0:0}% of the time). Reducing the requests with the most pathfinding work below will help."),
                         s.PathfindWaitShare * 100)));
                 }
                 if (s.SimFrameMilliseconds > s.SimFrameBudgetMilliseconds)
                 {
                     list.Add(new Finding(FindingLevel.Warning, string.Format(
                         CultureInfo.InvariantCulture,
-                        "シミュレーション 1 フレームの処理に平均 {0:0.0} ms かかり、設定速度に必要な {1:0.0} ms を超えています。街の人や物の多さで処理が重くなっています。",
+                        L("シミュレーション 1 フレームの処理に平均 {0:0.0} ms かかり、設定速度に必要な {1:0.0} ms を超えています。街の人や物の多さで処理が重くなっています。", "A simulation frame takes {0:0.0} ms on average, more than the {1:0.0} ms this speed needs. The number of people and objects in the city makes the simulation heavy."),
                         s.SimFrameMilliseconds, s.SimFrameBudgetMilliseconds)));
                 }
             }
@@ -91,12 +96,12 @@ public sealed class LoadReport
             {
                 var success = p.SuccessRate(top);
                 var detail = top == PathfindSource.JobSearch
-                    ? string.Format(CultureInfo.InvariantCulture, "行き先が見つかったのは {0:0}% だけで、職に就けない人が繰り返し探しています。", success * 100)
-                    : string.Format(CultureInfo.InvariantCulture, "行き先が見つかったのは {0:0}% です。", success * 100);
+                    ? string.Format(CultureInfo.InvariantCulture, L("行き先が見つかったのは {0:0}% だけで、職に就けない人が繰り返し探しています。", "Only {0:0}% find a destination, so people who cannot get a job keep searching again."), success * 100)
+                    : string.Format(CultureInfo.InvariantCulture, L("行き先が見つかったのは {0:0}% です。", "{0:0}% find a destination."), success * 100);
                 list.Add(new Finding(FindingLevel.Warning, string.Format(
                     CultureInfo.InvariantCulture,
-                    "経路探しの作業量の {0:0}% は「{1}」です。{2}",
-                    share * 100, SourceLabel(top), detail)));
+                    L("経路探しの作業量の {0:0}% は「{1}」です。{2}", "{0:0}% of pathfinding work is \"{1}\". {2}"),
+                    share * 100, SourceLabel(top, Language), detail)));
             }
         }
         if (Jobs is { } jobs)
@@ -105,24 +110,24 @@ public sealed class LoadReport
             {
                 list.Add(new Finding(FindingLevel.Warning, string.Format(
                     CultureInfo.InvariantCulture,
-                    "職を探している人 {0:#,0} 人に対して、空き職場は {1:#,0} 件です。商業・工業・オフィスを増やすと職探しが減ります。",
+                    L("職を探している人 {0:#,0} 人に対して、空き職場は {1:#,0} 件です。商業・工業・オフィスを増やすと職探しが減ります。", "{0:#,0} people are looking for work, but there are only {1:#,0} open jobs. More commercial, industrial and office zones will reduce job searching."),
                     jobs.TotalUnemployed, jobs.TotalVacancies)));
             }
             var far = jobs.Hotspots(1, HotspotMinUnemployed).FirstOrDefault(h => h.JobsReachMeters is null or >= FarJobsMeters);
             if (far is not null)
             {
                 var distance = far.JobsReachMeters is { } m
-                    ? string.Format(CultureInfo.InvariantCulture, "足りない職の半分を埋める空きが約 {0:0.#} km 先まで行かないとありません", m / 1000)
-                    : "市内の空きを全部合わせても足りない職を埋められません";
+                    ? string.Format(CultureInfo.InvariantCulture, L("足りない職の半分を埋める空きが約 {0:0.#} km 先まで行かないとありません", "enough open jobs to cover half of the shortage are about {0:0.#} km away"), m / 1000)
+                    : L("市内の空きを全部合わせても足りない職を埋められません", "all open jobs in the city together cannot cover the shortage");
                 list.Add(new Finding(FindingLevel.Warning, string.Format(
                     CultureInfo.InvariantCulture,
-                    "失業者 {0:#,0} 人の地区では、{1}。近くに職場を置くか、速い公共交通でつなぐと改善します。",
+                    L("失業者 {0:#,0} 人の地区では、{1}。近くに職場を置くか、速い公共交通でつなぐと改善します。", "In a district with {0:#,0} unemployed people, {1}. Placing workplaces nearby or connecting it with fast public transport will help."),
                     far.Unemployed, distance)));
             }
         }
         if (list.Count == 0)
         {
-            list.Add(new Finding(FindingLevel.Info, "目立った負荷の原因は見つかっていません。"));
+            list.Add(new Finding(FindingLevel.Info, L("目立った負荷の原因は見つかっていません。", "No major cause of load was found.")));
         }
         return list;
     }
@@ -224,7 +229,20 @@ public sealed class LoadReport
     }
 
     /// <summary>所見の文に使う依頼元の表示名（UI の SOURCE_LABELS と同じ言い方にそろえる）。</summary>
-    public static string SourceLabel(PathfindSource source) => source switch
+    public static string SourceLabel(PathfindSource source, UiLanguage language) => language == UiLanguage.English
+        ? source switch
+        {
+            PathfindSource.JobSearch => "Job search",
+            PathfindSource.Shopping => "Shopping",
+            PathfindSource.ResidentRepath => "Pedestrian rerouting",
+            PathfindSource.Trips => "Trips and leisure",
+            PathfindSource.School => "School search",
+            PathfindSource.Home => "Home search",
+            PathfindSource.ServiceDispatch => "Service vehicle dispatch",
+            PathfindSource.VehicleRepath => "Vehicle rerouting",
+            _ => "Other",
+        }
+        : source switch
     {
         PathfindSource.JobSearch => "職探し",
         PathfindSource.Shopping => "市民の買い物",

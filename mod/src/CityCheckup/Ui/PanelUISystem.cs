@@ -30,6 +30,7 @@ public sealed partial class PanelUISystem : UISystemBase
     private const float ScanSeconds = 10f;
 
     private ValueBinding<string> m_Status = null!;
+    private ValueBinding<string> m_Locale = null!;
     private SimulationSystem m_Simulation = null!;
     private CameraUpdateSystem m_Camera = null!;
     private CityScanner m_Scanner = null!;
@@ -59,6 +60,9 @@ public sealed partial class PanelUISystem : UISystemBase
 
         m_Status = new ValueBinding<string>(Group, "status", "{}");
         AddBinding(m_Status);
+        // 表示言語（"ja" / "en"）。ゲームの言語設定に合わせ、日本語以外は英語にする。
+        m_Locale = new ValueBinding<string>(Group, "locale", UiLanguages.Key(CurrentLanguage()));
+        AddBinding(m_Locale);
         AddBinding(new TriggerBinding<bool>(Group, "setOpen", OnSetOpen));
         AddBinding(new TriggerBinding<float, float, float>(Group, "jumpTo", OnJumpTo));
         // UI が表示されたことを Player.log で確かめるための合図。画面を見られない環境での動作確認に使う。
@@ -123,6 +127,10 @@ public sealed partial class PanelUISystem : UISystemBase
             m_Simulation.selectedSpeed = 3f;
             Debug.Log($"{Mod.LogPrefix} debug speed x3");
         }
+        // 言語はゲームの設定画面で途中から変えられるので、毎秒読み直す（変わったときだけ UI へ送られる）。
+        var language = CurrentLanguage();
+        m_Report.Language = language;
+        m_Locale.Update(UiLanguages.Key(language));
         m_Report.SelectedSpeed = m_Simulation.selectedSpeed;
         m_Report.ActualSpeed = m_Simulation.smoothSpeed;
 
@@ -170,6 +178,18 @@ public sealed partial class PanelUISystem : UISystemBase
             m_Report.Pathfind = null;
             m_Report.Speed = null;
         }
+    }
+
+    /// <summary>
+    /// 表示言語。動作確認用の debug-lang-en があれば英語に固定する（検証機の言語設定を変えずに英語表示を確かめるため）。
+    /// </summary>
+    private static UiLanguage CurrentLanguage()
+    {
+        if (DebugMarkers.Has("debug-lang-en"))
+        {
+            return UiLanguage.English;
+        }
+        return UiLanguages.FromLocale(Game.SceneFlow.GameManager.instance?.localizationManager?.activeLocaleId);
     }
 
     /// <summary>地区の一覧から選ばれた位置へカメラを移す。</summary>

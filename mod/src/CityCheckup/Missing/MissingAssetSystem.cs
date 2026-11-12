@@ -333,6 +333,12 @@ public sealed partial class MissingAssetSystem : UISystemBase
             case 0:
                 Scan();
                 Debug.Log($"{Mod.LogPrefix} missing before {Summary()} orphans={CountOrphans()}");
+                // 一覧が表示されてから、パネルの写真を先に撮る（見に行くと選択中になりパネルが畳まれるため）。
+                m_DebugAt = now + 3f;
+                m_DebugStep = 10;
+                break;
+            case 10:
+                UnityEngine.ScreenCapture.CaptureScreenshot(DebugMarkers.PathOf("debug-missing-list.png"));
                 var first = m_Result.Groups.FirstOrDefault(g => g.Kind != MissingKind.Area);
                 if (first is not null)
                 {

@@ -40,6 +40,8 @@
     <Reference Include="$(GameManaged)\Colossal.Logging.dll" Private="false" />
     <Reference Include="$(GameManaged)\Colossal.IO.AssetDatabase.dll" Private="false" />
     <Reference Include="$(GameManaged)\Colossal.UI.Binding.dll" Private="false" />
+    <!-- ゲームの言語設定（activeLocaleId）を読んで、パネルを日本語／英語で出し分けるため。 -->
+    <Reference Include="$(GameManaged)\Colossal.Localization.dll" Private="false" />
   </ItemGroup>
 
   <!-- UI（Bun でビルドした .mjs）があれば DLL と同じ出力先へ置く。 -->

@@ -1,5 +1,6 @@
 // 「負荷分析」タブ。C# 側 PanelUISystem の "status"（LoadReport.ToJson の JSON 文字列）を表示する。
 import { React, api } from "./game";
+import { useTexts } from "./i18n";
 import { GROUP, colors, fmt, pct, s } from "./style";
 
 const status$ = api.bindValue<string>(GROUP, "status", "{}");
@@ -35,21 +36,6 @@ interface Report {
   findings?: { level: "warning" | "info"; text: string }[];
 }
 
-// 経路探しの依頼元（Core の PathfindSources.Key）の表示名。
-const SOURCE_LABELS: Record<string, string> = {
-  jobSearch: "職探し",
-  shopping: "市民の買い物",
-  residentRepath: "歩行者の経路の引き直し",
-  trips: "外出・レジャー",
-  school: "学校探し",
-  home: "住まい探し",
-  serviceDispatch: "サービス車両の配車",
-  vehicleRepath: "車両の経路の引き直し",
-  other: "その他",
-};
-
-// 学歴の段階 0〜4。
-const LEVEL_LABELS = ["教育なし", "初等教育", "中等教育", "高等教育", "大学院"];
 
 function parseReport(text: string): Report {
   try {
@@ -60,6 +46,7 @@ function parseReport(text: string): Report {
   }
 }
 
+type T = ReturnType<typeof useTexts>;
 
 function Row(props: { label: any; value: any }) {
   return (
@@ -70,11 +57,11 @@ function Row(props: { label: any; value: any }) {
   );
 }
 
-function Findings({ report }: { report: Report }) {
+function Findings({ report, t }: { report: Report; t: T }) {
   const items = report.findings ?? [];
   return (
     <div>
-      <div style={s.heading}>気づいたこと</div>
+      <div style={s.heading}>{t.findings}</div>
       {items.map((f, i) => (
         // 文字列は 1 つにまとめて渡す（Gameface では隣り合う文字列が別の行に分かれることがあるため）。
         <div key={i} style={{ marginTop: "3rem", color: f.level === "warning" ? colors.warn : "white" }}>
@@ -85,43 +72,41 @@ function Findings({ report }: { report: Report }) {
   );
 }
 
-function Speed({ report }: { report: Report }) {
+function Speed({ report, t }: { report: Report; t: T }) {
   const sp = report.speed;
   return (
     <div style={s.section}>
-      <div style={s.heading}>シミュレーションの速度</div>
-      <Row label="設定した速度" value={`×${fmt(sp?.selected, 1)}`} />
-      <Row label="実際の速度" value={`×${fmt(sp?.actual, 2)}`} />
+      <div style={s.heading}>{t.speedHeading}</div>
+      <Row label={t.selectedSpeed} value={`×${fmt(sp?.selected, 1)}`} />
+      <Row label={t.actualSpeed} value={`×${fmt(sp?.actual, 2)}`} />
       {sp?.window && (
         <div>
-          <Row label="経路探し待ちで遅れた時間" value={pct(sp.window.pathfindWait)} />
-          <Row label="1 フレームの処理時間" value={`${fmt(sp.window.simFrameMs, 1)} ms（上限 ${fmt(sp.window.budgetMs, 1)} ms）`} />
-          <Row label="結果待ちの経路探し" value={`${fmt(sp.window.pending, 0)} 件`} />
-          <Row label="画面のフレームレート" value={`${fmt(sp.window.fps, 0)} fps`} />
+          <Row label={t.pathfindWait} value={pct(sp.window.pathfindWait)} />
+          <Row label={t.simFrame} value={t.simFrameValue(sp.window.simFrameMs, sp.window.budgetMs)} />
+          <Row label={t.pending} value={t.count(sp.window.pending)} />
+          <Row label={t.fps} value={`${fmt(sp.window.fps, 0)} fps`} />
         </div>
       )}
-      <Row label="人のデータ（観光客・通勤者を含む）" value={`${fmt(report.citizens)} 人`} />
+      <Row label={t.citizens} value={t.people(report.citizens)} />
     </div>
   );
 }
 
-function Pathfind({ report }: { report: Report }) {
+function Pathfind({ report, t }: { report: Report; t: T }) {
   const p = report.pathfind;
   return (
     <div style={s.section}>
-      <div style={s.heading}>経路探しの作業量</div>
-      {!p && <div style={s.sub}>数えています（10 秒ほどで表示します）…</div>}
+      <div style={s.heading}>{t.pathfindHeading}</div>
+      {!p && <div style={s.sub}>{t.counting10s}</div>}
       {p && (
         <div>
-          <Row label="1 フレームあたりの依頼" value={`${fmt(p.perFrame, 1)} 件`} />
-          <div style={{ ...s.sub, marginTop: "2rem" }}>
-            {"割合は探索した道の量（ゲームが記録する作業量）で、件数ではありません。"}
-          </div>
+          <Row label={t.requestsPerFrame} value={t.count(p.perFrame, 1)} />
+          <div style={{ ...s.sub, marginTop: "2rem" }}>{t.workNote}</div>
           {p.sources.map((src) => (
             <div key={src.key} style={{ marginTop: "4rem" }}>
               <div style={s.row}>
-                <div>{SOURCE_LABELS[src.key] ?? src.key}</div>
-                <div>{`${pct(src.workShare)}（${fmt(src.perFrame, 1)} 件・成功 ${pct(src.successRate)}）`}</div>
+                <div>{t.sources[src.key] ?? src.key}</div>
+                <div>{t.sourceValue(pct(src.workShare), src.perFrame, pct(src.successRate))}</div>
               </div>
               <div style={{ height: "4rem", background: colors.line, marginTop: "2rem" }}>
                 <div style={{ height: "4rem", width: `${Math.round((src.workShare ?? 0) * 100)}%`, background: colors.bar }} />
@@ -134,25 +119,25 @@ function Pathfind({ report }: { report: Report }) {
   );
 }
 
-function Jobs({ report }: { report: Report }) {
+function Jobs({ report, t }: { report: Report; t: T }) {
   const j = report.jobs;
   if (!j) {
     return (
       <div style={s.section}>
-        <div style={s.heading}>職と失業</div>
-        <div style={s.sub}>数えています…</div>
+        <div style={s.heading}>{t.jobsHeading}</div>
+        <div style={s.sub}>{t.counting}</div>
       </div>
     );
   }
   return (
     <div style={s.section}>
-      <div style={s.heading}>職と失業</div>
+      <div style={s.heading}>{t.jobsHeading}</div>
       <div style={{ ...s.row, ...s.sub }}>
-        <div style={{ width: "34%" }}>学歴</div>
-        <div style={{ width: "33%", textAlign: "right" }}>職を探す人</div>
-        <div style={{ width: "33%", textAlign: "right" }}>就ける空き</div>
+        <div style={{ width: "34%" }}>{t.education}</div>
+        <div style={{ width: "33%", textAlign: "right" }}>{t.seekers}</div>
+        <div style={{ width: "33%", textAlign: "right" }}>{t.reachable}</div>
       </div>
-      {LEVEL_LABELS.map((label, i) => (
+      {t.levels.map((label, i) => (
         <div key={i} style={s.row}>
           <div style={{ width: "34%" }}>{label}</div>
           <div style={{ width: "33%", textAlign: "right" }}>{fmt(j.unemployed[i])}</div>
@@ -161,22 +146,18 @@ function Jobs({ report }: { report: Report }) {
           </div>
         </div>
       ))}
-      <div style={{ ...s.sub, marginTop: "4rem" }}>
-        {`「就ける空き」は、その学歴以下で就ける空き職場の合計です。市外からの通勤者で職の無い人: ${fmt(j.commuters)} 人`}
-      </div>
+      <div style={{ ...s.sub, marginTop: "4rem" }}>{t.reachableNote(j.commuters)}</div>
       {j.hotspots.length > 0 && (
         <div style={{ marginTop: "8rem" }}>
-          <div style={s.heading}>職の足りない地区</div>
+          <div style={s.heading}>{t.hotspotsHeading}</div>
           {j.hotspots.map((h, i) => (
             <div key={i} style={s.row}>
               <div>
-                <div>{`失業 ${fmt(h.unemployed)} 人 / 空き ${fmt(h.vacancies)}`}</div>
-                <div style={s.sub}>
-                  {h.reachKm === null ? "市内の空きを全部合わせても足りません" : `足りない職の半分が集まるのは約 ${fmt(h.reachKm, 1)} km 先`}
-                </div>
+                <div>{t.hotspot(h.unemployed, h.vacancies)}</div>
+                <div style={s.sub}>{t.hotspotReach(h.reachKm)}</div>
               </div>
               <button style={s.smallButton} onClick={() => api.trigger(GROUP, "jumpTo", h.x, h.y, h.z)}>
-                見に行く
+                {t.goSee}
               </button>
             </div>
           ))}
@@ -186,18 +167,17 @@ function Jobs({ report }: { report: Report }) {
   );
 }
 
-function Households({ report }: { report: Report }) {
+function Households({ report, t }: { report: Report; t: T }) {
   const h = report.households;
   return (
     <div style={s.section}>
-      <div style={s.heading}>世帯</div>
-      <Row label="ホームレスの世帯" value={fmt(h?.homeless)} />
-      <Row label="転出中の世帯" value={fmt(h?.movingAway)} />
-      <div style={{ ...s.sub, marginTop: "8rem" }}>{`集計にかかった時間: ${fmt(report.scanMs, 0)} ms（10 秒ごと）`}</div>
+      <div style={s.heading}>{t.householdsHeading}</div>
+      <Row label={t.homeless} value={fmt(h?.homeless)} />
+      <Row label={t.movingAway} value={fmt(h?.movingAway)} />
+      <div style={{ ...s.sub, marginTop: "8rem" }}>{t.scanTime(report.scanMs)}</div>
     </div>
   );
 }
-
 
 /** C# から負荷の値が届いたか（UI が表示できたことの確認に使う）。 */
 export function loadReady(): boolean {
@@ -207,15 +187,16 @@ export function loadReady(): boolean {
 
 /** 「負荷分析」タブの中身。 */
 export function LoadTab() {
+  const t = useTexts();
   const statusText = api.useValue(status$);
   const report = React.useMemo(() => parseReport(statusText), [statusText]);
   return (
     <div>
-      <Findings report={report} />
-      <Speed report={report} />
-      <Pathfind report={report} />
-      <Jobs report={report} />
-      <Households report={report} />
+      <Findings report={report} t={t} />
+      <Speed report={report} t={t} />
+      <Pathfind report={report} t={t} />
+      <Jobs report={report} t={t} />
+      <Households report={report} t={t} />
     </div>
   );
 }

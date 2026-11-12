@@ -1,7 +1,8 @@
 // 「欠落アセット」タブ。C# 側 MissingAssetSystem の "missing"（MissingAssets.ToJson の JSON 文字列）を表示し、
 // 探す・見に行く・選んで消すを C# 側のトリガーへ送る。
 import { React, api } from "./game";
-import { GROUP, colors, fmt, s } from "./style";
+import { useTexts } from "./i18n";
+import { GROUP, colors, s } from "./style";
 
 const missing$ = api.bindValue<string>(GROUP, "missing", "{}");
 
@@ -22,13 +23,6 @@ interface MissingReport {
   groups?: MissingGroup[];
 }
 
-const KIND_LABELS: Record<MissingGroup["kind"], string> = {
-  building: "建物",
-  object: "置き物",
-  net: "道路・線路",
-  area: "エリア",
-};
-
 function parse(text: string): MissingReport {
   try {
     return JSON.parse(text) as MissingReport;
@@ -38,6 +32,7 @@ function parse(text: string): MissingReport {
 }
 
 export function MissingTab() {
+  const t = useTexts();
   const text = api.useValue(missing$);
   const report = React.useMemo(() => parse(text), [text]);
   const groups = report.groups ?? [];
@@ -69,20 +64,20 @@ export function MissingTab() {
   return (
     <div>
       <div style={s.row}>
-        <div style={s.heading}>アンインストールした mod の物</div>
+        <div style={s.heading}>{t.missingHeading}</div>
         <button style={s.smallButton} onClick={() => api.trigger(GROUP, "scanMissing")}>
-          {report.state === "idle" ? "探す" : "探し直す"}
+          {report.state === "idle" ? t.scan : t.rescan}
         </button>
       </div>
       <div style={s.sub}>
-        {"mod を外したあとも街に残っている物です。ゲームは代わりの見た目で表示しています。"}
+        {t.missingNote}
       </div>
 
-      {report.state === "deleting" && <div style={{ marginTop: "6rem" }}>{`${fmt(report.lastDeleted)} 個を削除しました。一覧を更新しています…`}</div>}
+      {report.state === "deleting" && <div style={{ marginTop: "6rem" }}>{t.deletedRefreshing(report.lastDeleted)}</div>}
       {report.state === "ready" && report.lastDeleted !== null && report.lastDeleted !== undefined && (
-        <div style={{ marginTop: "6rem" }}>{`直前に ${fmt(report.lastDeleted)} 個を削除しました。`}</div>
+        <div style={{ marginTop: "6rem" }}>{t.deletedJustNow(report.lastDeleted)}</div>
       )}
-      {report.state === "ready" && groups.length === 0 && <div style={{ marginTop: "8rem" }}>見つかりませんでした。</div>}
+      {report.state === "ready" && groups.length === 0 && <div style={{ marginTop: "8rem" }}>{t.notFound}</div>}
 
       {groups.map((g) => (
         <div key={g.key} style={s.section}>
@@ -105,12 +100,11 @@ export function MissingTab() {
               <div>{g.name}</div>
             </div>
             <button style={s.smallButton} onClick={() => jump(g)}>
-              見に行く
+              {t.goSee}
             </button>
           </div>
           <div style={s.sub}>
-            {`${KIND_LABELS[g.kind]}・${fmt(g.count)} か所` +
-              (g.deletable < g.count ? `（消せるのは ${fmt(g.deletable)} か所。建物の一部や道路はここでは消せません）` : "")}
+            {t.groupDetail(t.kinds[g.kind] ?? g.kind, g.count, g.deletable)}
           </div>
         </div>
       ))}
@@ -119,16 +113,16 @@ export function MissingTab() {
         <div style={s.section}>
           <div style={{ color: confirming ? colors.warn : "white" }}>
             {confirming
-              ? `本当に ${fmt(chosenCount)} 個を削除しますか？ 元に戻すには、保存せずに街を読み込み直してください。`
-              : `${fmt(chosenCount)} 個を選んでいます。`}
+              ? t.confirmDelete(chosenCount)
+              : t.selectedCount(chosenCount)}
           </div>
           <div style={{ ...s.row, justifyContent: "flex-start", marginTop: "6rem" }}>
             <button style={{ ...s.smallButton, background: confirming ? "rgba(255, 112, 67, 0.6)" : s.smallButton.background }} onClick={remove}>
-              {confirming ? "削除する" : "選んだ物を削除"}
+              {confirming ? t.deleteNow : t.deleteSelected}
             </button>
             {confirming && (
               <button style={{ ...s.smallButton, marginLeft: "8rem" }} onClick={() => setConfirming(false)}>
-                やめる
+                {t.cancel}
               </button>
             )}
           </div>
