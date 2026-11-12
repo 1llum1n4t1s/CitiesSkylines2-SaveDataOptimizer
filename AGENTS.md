@@ -36,7 +36,7 @@ dotnet build mod/src/CityCheckup/CityCheckup.csproj -c Release -p:GameManaged=<C
 
 ## 規約
 
-- コメントは日本語で、目的・設計意図・制約を書く。UI の文言も日本語のみ。
+- コメントは日本語で、目的・設計意図・制約を書く。UI の文言は日本語と英語の両方（`mod/ui/src/i18n.ts`、所見の文は Core の `LoadReport`）で、片方だけ足さない。
 - `Directory.Build.props` で `TreatWarningsAsErrors` と `EnforceCodeStyleInBuild` が有効。警告を残さない。`Version` は `/vava` 経由でだけ更新する。
 - ゲームの処理を変えるシステムは登録しない。分析・表示は読み取り専用で、削除はプレイヤーが UI で選んだときだけ行う。
 - 判定ロジックはゲーム型に依存しない Core に置き、`CityCheckup.Core.Tests` で検証する。ゲーム側のシステムは薄く保つ。
@@ -49,5 +49,5 @@ dotnet build mod/src/CityCheckup/CityCheckup.csproj -c Release -p:GameManaged=<C
 
 ## 動作確認
 
-- ゲーム内の確認は、`Mods\CityCheckup\` に置く目印ファイル（`debug-report`、`debug-missing`、`debug-delete`、`debug-speed3`。`mod/src/CityCheckup/DebugMarkers.cs`）で UI 操作を代替し、`Player.log` と画面保存で結果を見る。通常の利用者環境には置かない。
+- ゲーム内の確認は、`Mods\CityCheckup\` に置く目印ファイル（`debug-report`、`debug-missing`、`debug-delete`、`debug-speed3`、英語表示に固定する `debug-lang-en`。`mod/src/CityCheckup/DebugMarkers.cs`）で UI 操作を代替し、`Player.log` と画面保存で結果を見る。通常の利用者環境には置かない。
 - 実セーブでの削除確認は、自動保存で上書きされる前にゲームを止め、保存一覧の前後を比較する。

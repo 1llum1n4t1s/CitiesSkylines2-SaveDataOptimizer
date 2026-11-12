@@ -14,13 +14,13 @@ Cities: Skylines II の街が重い原因を見える化し、アンインスト
 | 部品 | 責務 |
 | --- | --- |
 | `Mod`（`IMod`） | システムの登録だけを行う。ゲームの処理は変えない。 |
-| `CityCheckup.Core` | ゲーム型に依存しない判定・集計・JSON 生成。`LoadReport`（所見の判定と JSON）、`JobMarket`（学歴別の求職者と空き職場、地区ごとの失業）、`PathfindSources`（システム名から依頼元の分類と区間の差分）、`SpeedSampler`（速度が設定より遅い理由を、経路探し待ちと 1 フレームの処理時間に分けて集計）、`MissingAssets`（欠落アセットの集約）、`JsonText`。 |
+| `CityCheckup.Core` | ゲーム型に依存しない判定・集計・JSON 生成。`LoadReport`（所見の判定と JSON）、`JobMarket`（学歴別の求職者と空き職場、地区ごとの失業）、`PathfindSources`（システム名から依頼元の分類と区間の差分）、`SpeedSampler`（速度が設定より遅い理由を、経路探し待ちと 1 フレームの処理時間に分けて集計）、`MissingAssets`（欠落アセットの集約）、`UiLanguage`（ゲームのロケールから日本語／英語を決める）、`JsonText`。 |
 | `Analysis/CityScanner` | 市民・世帯・職場をたどって `JobMarket` と世帯の集計を作る（読み取り専用）。 |
 | `Analysis/LoadProbeSystem` | 画面のフレームごとに、ゲーム自身の公開値（`SimulationSystem` の速度・1 フレームの処理時間、`PathfindResultSystem` の結果待ちと `queryStats`）を読む。区間の始めと終わりの `queryStats` の差から、依頼元システムごとの件数・成功数・探索の作業量を出す。 |
-| `Ui/PanelUISystem` | 負荷分析パネルのバインディング（グループ `cityCheckup`）。開いている間だけ集計を動かし、結果を JSON 文字列 1 本で UI へ渡す。 |
+| `Ui/PanelUISystem` | 負荷分析パネルのバインディング（グループ `cityCheckup`）。開いている間だけ集計を動かし、結果を JSON 文字列 1 本で UI へ渡す。表示言語（`locale` バインディング）も毎秒ゲームの言語設定から読んで渡す。 |
 | `Ui/CameraJump` | 「見に行く」でカメラを移す。 |
 | `Missing/MissingAssetSystem` | 欠落プレハブを参照する物を探し、選ばれたものを削除する。 |
-| `mod/ui` | タブ付きパネル（負荷分析／欠落アセット）。Bun で `CityCheckup.mjs` にビルドし、`GameTopLeft` に登録する。 |
+| `mod/ui` | タブ付きパネル（負荷分析／欠落アセット）。文言は `i18n.ts` に日英を持つ。Bun で `CityCheckup.mjs` にビルドし、`GameTopLeft` に登録する。 |
 
 ### データフロー
 
@@ -44,7 +44,7 @@ Cities: Skylines II の街が重い原因を見える化し、アンインスト
 - **経路探しはゲーム自身の統計で測る**: `PathfindResultSystem.queryStats`（公開）の区間差分を使い、件数ではなく探索の作業量（`m_GraphTraversal`）で重さを見る。以前は反射で `PathfindSetupSystem` の非公開フィールドを読んで件数を数えていたが、ゲームの更新に弱く作業量も取れないため廃止した（Git の `61bc654` に実装が残る）。限界として、統計は依頼元のシステム単位なので「失業者の職探し」と「転職」は分けられない。
 - **速度低下の原因を実測で 2 つに分ける**: ゲームが速度を落とす理由は「経路探しの結果待ち」と「1 フレームの処理時間が設定速度の間隔を超える」の 2 つで、どちらもゲームの公開値から同じ式で求める。CPU 使用率のような mod で測っていない値は出さない。
 - **選択中はパネルを畳む**: 「見に行く」で選択するとゲームの情報パネルが開き、重なるため。
-- **UI は日本語のみ**: 当面の対象が日本語利用者のため。掲載文（`PublishConfiguration.xml`）は英語と日本語を併記する。
+- **UI は日本語と英語**: ゲームの言語設定（`activeLocaleId`）が `ja` で始まれば日本語、それ以外はすべて英語。言語は途中で変えられるので毎秒読み直す。所見の文は Core の `LoadReport.Language` で出し分け、UI の文言は `mod/ui/src/i18n.ts` に置く。掲載文（`PublishConfiguration.xml`）は英語と日本語を併記する。
 - **取り残し車両の削除は外した**: 2 本のセーブで該当 0 件で、現行ゲームで修正済みと見られるため（Git の `da84f54` に実装が残る）。
 - **ゲームの更新に弱い箇所**: システム名による分類（2026-11 時点で確認。名前が変わっても `Other` に入るだけで集計は壊れない）、`queryStats`・`SimulationSystem` の公開値、バージョン指定 `GameVersion`（1.6.*）。
 
