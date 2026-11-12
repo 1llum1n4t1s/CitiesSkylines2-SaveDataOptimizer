@@ -12,6 +12,7 @@ namespace CityCheckup;
 /// - debug-missing: 欠落アセットを探して一覧をログに書き、最初の 1 か所へカメラを移して画面を保存する
 /// - debug-delete : debug-missing に加えて、消してよいものを全部消し、消した後の状態をログに書く
 /// - debug-speed3 : debug-report と一緒に使い、速度を ×3 に保つ（遅れの原因の切り分けを確かめるため）
+/// - debug-lang-en: ゲームの言語設定に関係なく、パネルと所見を英語で表示する（英語表示を確かめるため）
 /// </remarks>
 internal static class DebugMarkers
 {

@@ -1460,10 +1460,11 @@ pub fn job_market(input: &Path) -> Result<String, String> {
             let c = row.start + i;
             let state = w.fixed(c, citizen).map_or(0, |b| u16::from_le_bytes([b[0], b[1]]));
             let age = 2 * (state & 1) + ((state >> 1) & 1);
-            if (age == 1 || age == 2) && state & 0x400 == 0 {
-                if let Some(cl) = w.u32_of(c, member, 0).and_then(cell) {
-                    grid.entry(cl).or_default().1 += 1;
-                }
+            if (age == 1 || age == 2)
+                && state & 0x400 == 0
+                && let Some(cl) = w.u32_of(c, member, 0).and_then(cell)
+            {
+                grid.entry(cl).or_default().1 += 1;
             }
         }
     }
@@ -1473,7 +1474,7 @@ pub fn job_market(input: &Path) -> Result<String, String> {
     for ((x, z), (v, u)) in &cells {
         writeln!(out, "区画({x:>3},{z:>3})  空き {v:>6}  失業 {u:>6}").unwrap();
     }
-    write!(out, "空き求人のある事業所（FreeWorkplaces を持つ） {employers}\n").unwrap();
+    writeln!(out, "空き求人のある事業所（FreeWorkplaces を持つ） {employers}").unwrap();
     out.push_str("学歴/職場レベル  空き求人  失業(居住)  失業(通勤者)  就業者\n");
     for l in 0..5 {
         writeln!(

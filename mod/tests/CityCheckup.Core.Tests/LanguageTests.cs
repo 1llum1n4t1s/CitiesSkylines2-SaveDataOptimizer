@@ -32,7 +32,12 @@ public sealed class LanguageTests
     [TestMethod]
     public void HealthyCity_SaysSoInBothLanguages()
     {
-        Assert.AreEqual("No major cause of load was found.", new LoadReport { Language = UiLanguage.English }.Findings().Single().Text);
-        Assert.AreEqual("目立った負荷の原因は見つかっていません。", new LoadReport().Findings().Single().Text);
+        // 設定どおりの速度で動いている街では、警告ではなく「原因なし」の情報だけを出す。
+        var english = new LoadReport { SelectedSpeed = 1, ActualSpeed = 1, Language = UiLanguage.English }.Findings().Single();
+        var japanese = new LoadReport { SelectedSpeed = 1, ActualSpeed = 1 }.Findings().Single();
+        Assert.AreEqual(FindingLevel.Info, english.Level);
+        Assert.AreEqual(FindingLevel.Info, japanese.Level);
+        Assert.AreEqual("No major cause of load was found.", english.Text);
+        Assert.AreEqual("目立った負荷の原因は見つかっていません。", japanese.Text);
     }
 }

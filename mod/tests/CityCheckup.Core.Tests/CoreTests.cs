@@ -186,14 +186,6 @@ public sealed class LoadReportTests
         Assert.IsTrue(texts[5].Contains("全部合わせても"));
     }
     [TestMethod]
-    public void Findings_SaysNothingFoundForHealthyCity()
-    {
-        var report = new LoadReport { SelectedSpeed = 1, ActualSpeed = 1 };
-        var only = report.Findings().Single();
-        Assert.AreEqual(FindingLevel.Info, only.Level);
-    }
-
-    [TestMethod]
     public void ToJson_IsValidAndUsesNullForMissingParts()
     {
         var report = new LoadReport { SelectedSpeed = 3, ActualSpeed = float.NaN, ScanMilliseconds = 12.5 };

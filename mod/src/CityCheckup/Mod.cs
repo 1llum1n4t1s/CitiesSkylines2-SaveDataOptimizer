@@ -1,6 +1,5 @@
 using Game;
 using Game.Modding;
-using Game.Simulation;
 using CityCheckup.Analysis;
 using CityCheckup.Missing;
 using CityCheckup.Ui;
