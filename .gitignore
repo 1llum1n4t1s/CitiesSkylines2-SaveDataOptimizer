@@ -8,3 +8,6 @@ obj/
 /mod/ui/node_modules/
 /mod/ui/dist/
 TestResults/
+
+# リリース用の環境固有の設定（SSH の接続先・ゲームのパス）。書式は mod/scripts/release.local.example.json。
+/mod/scripts/release.local.json
