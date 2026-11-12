@@ -1,7 +1,9 @@
 /target/
 
-# mod（C# / Bun）のビルド生成物
-bin/
+# mod・tools（C# / Bun）のビルド生成物。
+# `bin/` を無条件に書くと Rust のバイナリ入口 src/bin/*.rs まで無視されるため、C# のツリー配下に限定する。
+/mod/**/bin/
+/tools/**/bin/
 obj/
 /mod/ui/node_modules/
 /mod/ui/dist/
