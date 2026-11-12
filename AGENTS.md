@@ -49,5 +49,5 @@ dotnet build mod/src/CityCheckup/CityCheckup.csproj -c Release -p:GameManaged=<C
 
 ## 動作確認
 
-- ゲーム内の確認は、`Mods\CityCheckup\` に置く目印ファイル（`debug-report`、`debug-missing`、`debug-delete`。`mod/src/CityCheckup/DebugMarkers.cs`）で UI 操作を代替し、`Player.log` と画面保存で結果を見る。通常の利用者環境には置かない。
+- ゲーム内の確認は、`Mods\CityCheckup\` に置く目印ファイル（`debug-report`、`debug-missing`、`debug-delete`、`debug-speed3`。`mod/src/CityCheckup/DebugMarkers.cs`）で UI 操作を代替し、`Player.log` と画面保存で結果を見る。通常の利用者環境には置かない。
 - 実セーブでの削除確認は、自動保存で上書きされる前にゲームを止め、保存一覧の前後を比較する。
