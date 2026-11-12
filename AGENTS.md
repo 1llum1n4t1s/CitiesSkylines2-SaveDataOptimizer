@@ -70,5 +70,5 @@ Rust ツール（`Cargo.toml` の `cok-inspector`）は配布しておらず、�
 - ModPublisher はゲームでログインした Paradox アカウントで自動ログインする。パスワードは扱わない。ゲーム PC に .NET 6 が無くても `DOTNET_ROLL_FORWARD=Major` で動く（スクリプトが設定する）。
 - **deploy**: なし（`DEPLOY_REQUIREMENT=not-applicable`）。Paradox Mods への公開そのものが配布。
 - **署名・CI**: なし。ローカルのスクリプトだけで公開する。
-- **告知**: Paradox Mods で一般公開している mod なので、公開後の X 告知の対象になる。
+- **告知**: 初回公開は非公開（Hidden、`PublishConfiguration.xml` の注記と README を参照）。Paradox Mods 上で一般公開になっている版だけが、公開後の X 告知の対象になる。公開範囲は本人に確認する。
 - **既知の経緯**: 0.1.0 は 2026-11-12 に release branch を作らずに公開した（公開時のコミットは `2692b58`）。0.1.1 以降は `release/<版>` branch を作る。
